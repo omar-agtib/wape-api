@@ -24,6 +24,9 @@ import { TasksModule } from './modules/tasks/tasks.module';
 import { ToolsModule } from './modules/tools/tools.module';
 import { ArticlesModule } from './modules/articles/articles.module';
 import { StockModule } from './modules/stock/stock.module';
+import { ContactsModule } from './modules/contacts/contacts.module';
+import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
+import { ReceptionsModule } from './modules/receptions/receptions.module';
 
 import { Tenant } from './modules/tenants/tenant.entity';
 import { User } from './modules/users/user.entity';
@@ -38,6 +41,11 @@ import { Tool } from './modules/tools/tool.entity';
 import { ToolMovement } from './modules/tools/tool-movement.entity';
 import { Article } from './modules/articles/article.entity';
 import { StockMovement } from './modules/stock/stock-movement.entity';
+import { Contact } from './modules/contacts/contact.entity';
+import { ContactDocument } from './modules/contacts/contact-document.entity';
+import { PurchaseOrder } from './modules/purchase-orders/purchase-order.entity';
+import { PurchaseOrderLine } from './modules/purchase-orders/purchase-order-line.entity';
+import { Reception } from './modules/receptions/reception.entity';
 
 @Module({
   imports: [
@@ -63,6 +71,9 @@ import { StockMovement } from './modules/stock/stock-movement.entity';
           Task, TaskPersonnel, TaskArticle, TaskTool,
           Tool, ToolMovement,
           Article, StockMovement,
+          Contact, ContactDocument,
+          PurchaseOrder, PurchaseOrderLine,
+          Reception,
         ],
         synchronize: config.get<string>('app.nodeEnv') === 'development',
         logging: config.get<string>('app.nodeEnv') === 'development',
@@ -80,6 +91,7 @@ import { StockMovement } from './modules/stock/stock-movement.entity';
     AuthModule, UsersModule, TenantsModule, HealthModule,
     PersonnelModule, ProjectsModule, TasksModule,
     ToolsModule, ArticlesModule, StockModule,
+    ContactsModule, PurchaseOrdersModule, ReceptionsModule,
   ],
 
   providers: [

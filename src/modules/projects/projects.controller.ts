@@ -14,11 +14,17 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
+  // Add these imports at the top of the file:
+  import { PurchaseOrdersService } from '../purchase-orders/purchase-orders.service';
+
 @ApiTags('projects')
 @ApiBearerAuth('JWT')
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly service: ProjectsService) {}
+  constructor(
+    private readonly service: ProjectsService,
+    private readonly poService: PurchaseOrdersService,
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
@@ -102,5 +108,16 @@ export class ProjectsController {
       projectId: id,
       hint: `Use GET /api/tasks?projectId=${id} to list tasks for this project`,
     }));
+  }
+
+
+
+  @Get(':id/purchase-orders')
+  @ApiOperation({ summary: 'List purchase orders linked to this project (C8)' })
+  getProjectPurchaseOrders(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    return this.poService.findByProject(user.tenantId, id);
   }
 }
