@@ -2,16 +2,16 @@ import {
   Controller, Get, Post, Put, Patch, Delete,
   Body, Param, Query,
 } from '@nestjs/common';
-import {
-  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { AddTaskPersonnelDto, UpdateTaskPersonnelDto } from './dto/task-resource.dto';
 import { ChangeTaskStatusDto } from './dto/task-status.dto';
-import { Task } from './task.entity';
-import { TaskPersonnel } from './task-personnel.entity';
+import {
+  AddTaskPersonnelDto, UpdateTaskPersonnelDto,
+  AddTaskArticleDto, UpdateTaskArticleDto,
+  AddTaskToolDto, UpdateTaskToolDto,
+} from './dto/task-resource.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole, TaskStatus } from '../../common/enums';
@@ -24,18 +24,15 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 export class TasksController {
   constructor(private readonly service: TasksService) {}
 
-  // ── CRUD ──────────────────────────────────────────────────────────────────
-
   @Post()
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
-  @ApiOperation({ summary: 'Create a task under a project' })
-  @ApiResponse({ status: 201, type: Task })
-  create(@CurrentUser() user: JwtPayload, @Body() dto: CreateTaskDto): Promise<Task> {
+  @ApiOperation({ summary: 'Create a task' })
+  create(@CurrentUser() user: JwtPayload, @Body() dto: CreateTaskDto) {
     return this.service.create(user.tenantId, dto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'List tasks (paginated + filters)' })
+  @ApiOperation({ summary: 'List tasks (paginated)' })
   @ApiQuery({ name: 'projectId', required: false })
   @ApiQuery({ name: 'status', required: false, enum: TaskStatus })
   @ApiQuery({ name: 'search', required: false })
@@ -50,99 +47,128 @@ export class TasksController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get task detail with personnel list' })
-  @ApiResponse({ status: 200, type: Task })
+  @ApiOperation({ summary: 'Task detail with personnel, articles, tools' })
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.service.findOne(user.tenantId, id);
   }
 
   @Put(':id')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
-  @ApiOperation({ summary: 'Update task details' })
-  @ApiResponse({ status: 200, type: Task })
-  update(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-    @Body() dto: UpdateTaskDto,
-  ): Promise<Task> {
+  @ApiOperation({ summary: 'Update task' })
+  update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateTaskDto) {
     return this.service.update(user.tenantId, id, dto);
   }
 
   @Patch(':id/status')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
   @ApiOperation({
-    summary: 'Change task status — triggers W-P1 (project cascade)',
-    description: `Valid transitions:
-- **planned → on_progress** (Sprint 2 will add stock reservation W1)
-- **on_progress → completed** (Sprint 2 will add stock consumption W2)
-
-No regression allowed. completed is terminal.`,
+    summary: 'Change task status — triggers W1 or W2',
+    description: `**planned → on_progress (W1):** Checks stock for all articles. Reserves stock. Creates OUT movements for all tools.  
+**on_progress → completed (W2):** Consumes stock. Creates IN movements for all tools. Returns tools to available.  
+All steps run in a single DB transaction — any failure rolls back completely.`,
   })
-  @ApiResponse({ status: 200, type: Task })
-  @ApiResponse({ status: 422, description: 'INVALID_STATUS_TRANSITION' })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 422, description: 'INSUFFICIENT_STOCK | INVALID_STATUS_TRANSITION | TOOL_NOT_AVAILABLE' })
   changeStatus(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
     @Body() dto: ChangeTaskStatusDto,
-  ): Promise<Task> {
+  ) {
     return this.service.changeStatus(user.tenantId, id, dto.status);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
-  @ApiOperation({ summary: 'Soft delete a task' })
-  async remove(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-  ): Promise<{ message: string }> {
+  @ApiOperation({ summary: 'Soft delete task' })
+  async remove(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<{ message: string }> {
     await this.service.remove(user.tenantId, id);
     return { message: 'Task deleted successfully' };
   }
 
-  // ── Personnel resource ────────────────────────────────────────────────────
-
+  // ── Personnel ──────────────────────────────────────────────────────────────
   @Post(':id/personnel')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
-  @ApiOperation({
-    summary: 'Add personnel to task',
-    description: 'unitCost is pre-filled from personnel.costPerHour but fully overridable. Recalculates task estimatedCost.',
-  })
-  @ApiResponse({ status: 201, type: TaskPersonnel })
-  addPersonnel(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-    @Body() dto: AddTaskPersonnelDto,
-  ): Promise<TaskPersonnel> {
-    return this.service.addPersonnel(user.tenantId, id, dto);
+  @ApiOperation({ summary: 'Add personnel to task (unitCost pre-filled, overridable)' })
+  addPersonnel(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Body() dto: AddTaskPersonnelDto) {
+    return this.service.addPersonnel(u.tenantId, id, dto);
   }
 
   @Get(':id/personnel')
   @ApiOperation({ summary: 'List personnel assigned to task' })
-  listPersonnel(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<TaskPersonnel[]> {
-    return this.service.listPersonnel(user.tenantId, id);
+  listPersonnel(@CurrentUser() u: JwtPayload, @Param('id') id: string) {
+    return this.service.listPersonnel(u.tenantId, id);
   }
 
   @Put(':id/personnel/:rid')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
-  @ApiOperation({ summary: 'Update quantity / cost of a personnel assignment' })
-  updatePersonnel(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-    @Param('rid') rid: string,
-    @Body() dto: UpdateTaskPersonnelDto,
-  ): Promise<TaskPersonnel> {
-    return this.service.updatePersonnel(user.tenantId, id, rid, dto);
+  @ApiOperation({ summary: 'Update personnel assignment' })
+  updatePersonnel(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string, @Body() dto: UpdateTaskPersonnelDto) {
+    return this.service.updatePersonnel(u.tenantId, id, rid, dto);
   }
 
   @Delete(':id/personnel/:rid')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
-  @ApiOperation({ summary: 'Remove a personnel assignment from task' })
-  async removePersonnel(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-    @Param('rid') rid: string,
-  ): Promise<{ message: string }> {
-    await this.service.removePersonnel(user.tenantId, id, rid);
-    return { message: 'Personnel removed from task' };
+  @ApiOperation({ summary: 'Remove personnel from task' })
+  async removePersonnel(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string): Promise<{ message: string }> {
+    await this.service.removePersonnel(u.tenantId, id, rid);
+    return { message: 'Personnel removed' };
+  }
+
+  // ── Articles ───────────────────────────────────────────────────────────────
+  @Post(':id/articles')
+  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @ApiOperation({ summary: 'Add article to task (unitCost pre-filled from article.unitPrice)' })
+  addArticle(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Body() dto: AddTaskArticleDto) {
+    return this.service.addArticle(u.tenantId, id, dto);
+  }
+
+  @Get(':id/articles')
+  @ApiOperation({ summary: 'List articles assigned to task' })
+  listArticles(@CurrentUser() u: JwtPayload, @Param('id') id: string) {
+    return this.service.listArticles(u.tenantId, id);
+  }
+
+  @Put(':id/articles/:rid')
+  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @ApiOperation({ summary: 'Update article quantity / cost' })
+  updateArticle(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string, @Body() dto: UpdateTaskArticleDto) {
+    return this.service.updateArticle(u.tenantId, id, rid, dto);
+  }
+
+  @Delete(':id/articles/:rid')
+  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @ApiOperation({ summary: 'Remove article from task' })
+  async removeArticle(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string): Promise<{ message: string }> {
+    await this.service.removeArticle(u.tenantId, id, rid);
+    return { message: 'Article removed' };
+  }
+
+  // ── Tools ──────────────────────────────────────────────────────────────────
+  @Post(':id/tools')
+  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @ApiOperation({ summary: 'Add tool to task' })
+  addTool(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Body() dto: AddTaskToolDto) {
+    return this.service.addTool(u.tenantId, id, dto);
+  }
+
+  @Get(':id/tools')
+  @ApiOperation({ summary: 'List tools assigned to task' })
+  listTools(@CurrentUser() u: JwtPayload, @Param('id') id: string) {
+    return this.service.listTools(u.tenantId, id);
+  }
+
+  @Put(':id/tools/:rid')
+  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @ApiOperation({ summary: 'Update tool quantity / cost' })
+  updateTool(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string, @Body() dto: UpdateTaskToolDto) {
+    return this.service.updateTool(u.tenantId, id, rid, dto);
+  }
+
+  @Delete(':id/tools/:rid')
+  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @ApiOperation({ summary: 'Remove tool from task' })
+  async removeTool(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string): Promise<{ message: string }> {
+    await this.service.removeTool(u.tenantId, id, rid);
+    return { message: 'Tool removed' };
   }
 }

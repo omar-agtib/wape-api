@@ -14,7 +14,6 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
-// Modules
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
@@ -22,8 +21,10 @@ import { HealthModule } from './modules/health/health.module';
 import { PersonnelModule } from './modules/personnel/personnel.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { ToolsModule } from './modules/tools/tools.module';
+import { ArticlesModule } from './modules/articles/articles.module';
+import { StockModule } from './modules/stock/stock.module';
 
-// Entities
 import { Tenant } from './modules/tenants/tenant.entity';
 import { User } from './modules/users/user.entity';
 import { Personnel } from './modules/personnel/personnel.entity';
@@ -31,6 +32,12 @@ import { Project } from './modules/projects/project.entity';
 import { ProjectFinanceSnapshot } from './modules/projects/project-finance-snapshot.entity';
 import { Task } from './modules/tasks/task.entity';
 import { TaskPersonnel } from './modules/tasks/task-personnel.entity';
+import { TaskArticle } from './modules/tasks/task-article.entity';
+import { TaskTool } from './modules/tasks/task-tool.entity';
+import { Tool } from './modules/tools/tool.entity';
+import { ToolMovement } from './modules/tools/tool-movement.entity';
+import { Article } from './modules/articles/article.entity';
+import { StockMovement } from './modules/stock/stock-movement.entity';
 
 @Module({
   imports: [
@@ -50,7 +57,13 @@ import { TaskPersonnel } from './modules/tasks/task-personnel.entity';
         password: config.get<string>('database.password'),
         database: config.get<string>('database.name'),
         ssl: config.get<boolean>('database.ssl') ? { rejectUnauthorized: false } : false,
-        entities: [Tenant, User, Personnel, Project, ProjectFinanceSnapshot, Task, TaskPersonnel],
+        entities: [
+          Tenant, User, Personnel,
+          Project, ProjectFinanceSnapshot,
+          Task, TaskPersonnel, TaskArticle, TaskTool,
+          Tool, ToolMovement,
+          Article, StockMovement,
+        ],
         synchronize: config.get<string>('app.nodeEnv') === 'development',
         logging: config.get<string>('app.nodeEnv') === 'development',
       }),
@@ -64,20 +77,16 @@ import { TaskPersonnel } from './modules/tasks/task-personnel.entity';
       }],
     }),
 
-    AuthModule,
-    UsersModule,
-    TenantsModule,
-    HealthModule,
-    PersonnelModule,
-    ProjectsModule,
-    TasksModule,
+    AuthModule, UsersModule, TenantsModule, HealthModule,
+    PersonnelModule, ProjectsModule, TasksModule,
+    ToolsModule, ArticlesModule, StockModule,
   ],
 
   providers: [
-    { provide: APP_FILTER,       useClass: HttpExceptionFilter },
-    { provide: APP_GUARD,        useClass: JwtAuthGuard },
-    { provide: APP_GUARD,        useClass: RolesGuard },
-    { provide: APP_INTERCEPTOR,  useClass: TransformInterceptor },
+    { provide: APP_FILTER,      useClass: HttpExceptionFilter },
+    { provide: APP_GUARD,       useClass: JwtAuthGuard },
+    { provide: APP_GUARD,       useClass: RolesGuard },
+    { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
   ],
 })
 export class AppModule {}
