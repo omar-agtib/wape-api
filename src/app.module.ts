@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 
 import appConfig from './config/app.config';
@@ -33,6 +34,7 @@ import { NonConformitiesModule } from './modules/non-conformities/non-conformiti
 import { DocumentsModule } from './modules/documents/documents.module';
 import { GanttModule } from './modules/gantt/gantt.module';
 import { FormationModule } from './modules/formation/formation.module';
+import { FinanceModule } from './modules/finance/finance.module';
 
 import { Tenant } from './modules/tenants/tenant.entity';
 import { User } from './modules/users/user.entity';
@@ -61,6 +63,10 @@ import { Document } from './modules/documents/document.entity';
 import { Tutorial } from './modules/formation/tutorial.entity';
 import { SupportTicket } from './modules/formation/support-ticket.entity';
 import { TicketMessage } from './modules/formation/ticket-message.entity';
+import { Subscription } from './modules/finance/entities/subscription.entity';
+import { SupplierPayment } from './modules/finance/entities/supplier-payment.entity';
+import { SubcontractorPayment } from './modules/finance/entities/subcontractor-payment.entity';
+import { Transaction } from './modules/finance/entities/transaction.entity';
 
 @Module({
   imports: [
@@ -69,6 +75,8 @@ import { TicketMessage } from './modules/formation/ticket-message.entity';
       load: [appConfig, databaseConfig, jwtConfig, redisConfig],
       envFilePath: '.env',
     }),
+
+    ScheduleModule.forRoot(),
 
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
@@ -110,6 +118,10 @@ import { TicketMessage } from './modules/formation/ticket-message.entity';
           Tutorial,
           SupportTicket,
           TicketMessage,
+          Subscription,
+          SupplierPayment,
+          SubcontractorPayment,
+          Transaction,
         ],
         synchronize: config.get<string>('app.nodeEnv') === 'development',
         logging: config.get<string>('app.nodeEnv') === 'development',
@@ -145,6 +157,7 @@ import { TicketMessage } from './modules/formation/ticket-message.entity';
     DocumentsModule,
     GanttModule,
     FormationModule,
+    FinanceModule,
   ],
 
   providers: [

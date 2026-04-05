@@ -85,3 +85,54 @@ export enum UserRole {
 
 export const SUPPORTED_CURRENCIES = ['MAD', 'USD', 'EUR', 'GBP'] as const;
 export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+
+export enum BillingType {
+  MONTHLY = 'monthly',
+  ANNUALLY = 'annually',
+}
+
+export enum SubscriptionPlan {
+  STARTER = 'starter',
+  BASIC = 'basic',
+  BUSINESS = 'business',
+  ENTERPRISE = 'enterprise',
+}
+
+export enum PaymentMethodType {
+  CREDIT_CARD = 'credit_card',
+  BANK_TRANSFER = 'bank_transfer',
+  PAYPAL = 'paypal',
+  CHECK = 'check',
+}
+
+export enum TransactionType {
+  INCOME = 'income',
+  EXPENSE = 'expense',
+  SUBSCRIPTION = 'subscription',
+  SUPPLIER = 'supplier_payment',
+  SUBCONTRACTOR = 'subcontractor_payment',
+}
+
+export enum TransactionStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  SUCCESS = 'success',
+  FAILED = 'failed',
+  REJECTED = 'rejected',
+}
+
+export enum PaymentStatus {
+  PENDING = 'pending',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  PAID = 'paid',
+  PARTIALLY_PAID = 'partially_paid',
+  OVERDUE = 'overdue',
+}
+
+export enum SubscriptionStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  EXPIRED = 'expired',
+  CANCELLED = 'cancelled',
+}
