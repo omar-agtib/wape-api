@@ -27,6 +27,8 @@ import { StockModule } from './modules/stock/stock.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 import { ReceptionsModule } from './modules/receptions/receptions.module';
+import { AttachmentsModule } from './modules/attachments/attachments.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 
 import { Tenant } from './modules/tenants/tenant.entity';
 import { User } from './modules/users/user.entity';
@@ -46,6 +48,9 @@ import { ContactDocument } from './modules/contacts/contact-document.entity';
 import { PurchaseOrder } from './modules/purchase-orders/purchase-order.entity';
 import { PurchaseOrderLine } from './modules/purchase-orders/purchase-order-line.entity';
 import { Reception } from './modules/receptions/reception.entity';
+import { Attachment } from './modules/attachments/attachment.entity';
+import { AttachmentTask } from './modules/attachments/attachment-task.entity';
+import { Invoice } from './modules/invoices/invoice.entity';
 
 @Module({
   imports: [
@@ -64,16 +69,31 @@ import { Reception } from './modules/receptions/reception.entity';
         username: config.get<string>('database.username'),
         password: config.get<string>('database.password'),
         database: config.get<string>('database.name'),
-        ssl: config.get<boolean>('database.ssl') ? { rejectUnauthorized: false } : false,
+        ssl: config.get<boolean>('database.ssl')
+          ? { rejectUnauthorized: false }
+          : false,
         entities: [
-          Tenant, User, Personnel,
-          Project, ProjectFinanceSnapshot,
-          Task, TaskPersonnel, TaskArticle, TaskTool,
-          Tool, ToolMovement,
-          Article, StockMovement,
-          Contact, ContactDocument,
-          PurchaseOrder, PurchaseOrderLine,
+          Tenant,
+          User,
+          Personnel,
+          Project,
+          ProjectFinanceSnapshot,
+          Task,
+          TaskPersonnel,
+          TaskArticle,
+          TaskTool,
+          Tool,
+          ToolMovement,
+          Article,
+          StockMovement,
+          Contact,
+          ContactDocument,
+          PurchaseOrder,
+          PurchaseOrderLine,
           Reception,
+          Attachment,
+          AttachmentTask,
+          Invoice,
         ],
         synchronize: config.get<string>('app.nodeEnv') === 'development',
         logging: config.get<string>('app.nodeEnv') === 'development',
@@ -82,22 +102,35 @@ import { Reception } from './modules/receptions/reception.entity';
 
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => [{
-        ttl: config.get<number>('THROTTLE_TTL') ?? 60000,
-        limit: config.get<number>('THROTTLE_LIMIT') ?? 100,
-      }],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get<number>('THROTTLE_TTL') ?? 60000,
+          limit: config.get<number>('THROTTLE_LIMIT') ?? 100,
+        },
+      ],
     }),
 
-    AuthModule, UsersModule, TenantsModule, HealthModule,
-    PersonnelModule, ProjectsModule, TasksModule,
-    ToolsModule, ArticlesModule, StockModule,
-    ContactsModule, PurchaseOrdersModule, ReceptionsModule,
+    AuthModule,
+    UsersModule,
+    TenantsModule,
+    HealthModule,
+    PersonnelModule,
+    ProjectsModule,
+    TasksModule,
+    ToolsModule,
+    ArticlesModule,
+    StockModule,
+    ContactsModule,
+    PurchaseOrdersModule,
+    ReceptionsModule,
+    AttachmentsModule,
+    InvoicesModule,
   ],
 
   providers: [
-    { provide: APP_FILTER,      useClass: HttpExceptionFilter },
-    { provide: APP_GUARD,       useClass: JwtAuthGuard },
-    { provide: APP_GUARD,       useClass: RolesGuard },
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
   ],
 })
