@@ -29,6 +29,10 @@ import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.
 import { ReceptionsModule } from './modules/receptions/receptions.module';
 import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
+import { NonConformitiesModule } from './modules/non-conformities/non-conformities.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { GanttModule } from './modules/gantt/gantt.module';
+import { FormationModule } from './modules/formation/formation.module';
 
 import { Tenant } from './modules/tenants/tenant.entity';
 import { User } from './modules/users/user.entity';
@@ -51,6 +55,12 @@ import { Reception } from './modules/receptions/reception.entity';
 import { Attachment } from './modules/attachments/attachment.entity';
 import { AttachmentTask } from './modules/attachments/attachment-task.entity';
 import { Invoice } from './modules/invoices/invoice.entity';
+import { NonConformity } from './modules/non-conformities/non-conformity.entity';
+import { NcImage } from './modules/non-conformities/nc-image.entity';
+import { Document } from './modules/documents/document.entity';
+import { Tutorial } from './modules/formation/tutorial.entity';
+import { SupportTicket } from './modules/formation/support-ticket.entity';
+import { TicketMessage } from './modules/formation/ticket-message.entity';
 
 @Module({
   imports: [
@@ -94,6 +104,12 @@ import { Invoice } from './modules/invoices/invoice.entity';
           Attachment,
           AttachmentTask,
           Invoice,
+          NonConformity,
+          NcImage,
+          Document,
+          Tutorial,
+          SupportTicket,
+          TicketMessage,
         ],
         synchronize: config.get<string>('app.nodeEnv') === 'development',
         logging: config.get<string>('app.nodeEnv') === 'development',
@@ -125,6 +141,10 @@ import { Invoice } from './modules/invoices/invoice.entity';
     ReceptionsModule,
     AttachmentsModule,
     InvoicesModule,
+    NonConformitiesModule,
+    DocumentsModule,
+    GanttModule,
+    FormationModule,
   ],
 
   providers: [
