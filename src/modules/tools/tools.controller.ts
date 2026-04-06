@@ -1,7 +1,20 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ToolsService } from './tools.service';
 import { CreateToolDto } from './dto/create-tool.dto';
 import { UpdateToolDto } from './dto/update-tool.dto';
@@ -24,7 +37,10 @@ export class ToolsController {
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
   @ApiOperation({ summary: 'Create a tool' })
   @ApiResponse({ status: 201, type: Tool })
-  create(@CurrentUser() user: JwtPayload, @Body() dto: CreateToolDto): Promise<Tool> {
+  create(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateToolDto,
+  ): Promise<Tool> {
     return this.service.create(user.tenantId, dto);
   }
 
@@ -40,13 +56,20 @@ export class ToolsController {
     @Query('category') category?: string,
     @Query('search') search?: string,
   ) {
-    return this.service.findAll(user.tenantId, pagination, { status, category, search });
+    return this.service.findAll(user.tenantId, pagination, {
+      status,
+      category,
+      search,
+    });
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get tool detail' })
   @ApiResponse({ status: 200, type: Tool })
-  findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<Tool> {
+  findOne(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ): Promise<Tool> {
     return this.service.findOne(user.tenantId, id);
   }
 
@@ -79,16 +102,35 @@ export class ToolsController {
     description: `Rules:
 - **OUT** requires tool status = \`available\` (RG11)
 - **IN** requires tool status = \`in_use\` (RG15)
-- \`retired\` tools cannot have OUT movements (RG16)`,
+- \`retired\` tools cannot have OUT movements (RG16)
+
+Response includes both the movement record and the **updated tool** with its new status.`,
   })
-  @ApiResponse({ status: 201, type: ToolMovement })
-  @ApiResponse({ status: 422, description: 'TOOL_NOT_AVAILABLE | TOOL_NOT_IN_USE | TOOL_RETIRED' })
-  createMovement(
+  @ApiResponse({ status: 201 })
+  @ApiResponse({
+    status: 422,
+    description: 'TOOL_NOT_AVAILABLE | TOOL_NOT_IN_USE | TOOL_RETIRED',
+  })
+  async createMovement(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
     @Body() dto: CreateToolMovementDto,
-  ): Promise<ToolMovement> {
-    return this.service.createMovement(user.tenantId, id, dto, false);
+  ) {
+    const { movement, tool } = await this.service.createMovement(
+      user.tenantId,
+      id,
+      dto,
+      false,
+    );
+    return {
+      movement,
+      tool: {
+        id: tool.id,
+        name: tool.name,
+        status: tool.status,
+      },
+      message: `Tool is now ${tool.status}`,
+    };
   }
 
   @Get(':id/movements')

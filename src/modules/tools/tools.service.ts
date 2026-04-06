@@ -1,5 +1,7 @@
 import {
-  Injectable, NotFoundException, UnprocessableEntityException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,9 +9,16 @@ import { Tool } from './tool.entity';
 import { ToolMovement } from './tool-movement.entity';
 import { CreateToolDto } from './dto/create-tool.dto';
 import { UpdateToolDto } from './dto/update-tool.dto';
-import { CreateToolMovementDto, MovementDirection } from './dto/tool-movement.dto';
+import {
+  CreateToolMovementDto,
+  MovementDirection,
+} from './dto/tool-movement.dto';
 import { ToolStatus } from '../../common/enums';
-import { PaginationDto, paginate, PaginatedResult } from '../../common/dto/pagination.dto';
+import {
+  PaginationDto,
+  paginate,
+  PaginatedResult,
+} from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class ToolsService {
@@ -23,7 +32,11 @@ export class ToolsService {
   // ── CRUD ────────────────────────────────────────────────────────────────────
 
   async create(tenantId: string, dto: CreateToolDto): Promise<Tool> {
-    const tool = this.toolRepo.create({ ...dto, tenantId, status: ToolStatus.AVAILABLE });
+    const tool = this.toolRepo.create({
+      ...dto,
+      tenantId,
+      status: ToolStatus.AVAILABLE,
+    });
     return this.toolRepo.save(tool);
   }
 
@@ -38,22 +51,35 @@ export class ToolsService {
       .where('t.tenant_id = :tenantId', { tenantId })
       .andWhere('t.deleted_at IS NULL');
 
-    if (filters.status)   qb.andWhere('t.status = :status', { status: filters.status });
-    if (filters.category) qb.andWhere('t.category ILIKE :cat', { cat: `%${filters.category}%` });
-    if (filters.search)   qb.andWhere('t.name ILIKE :search', { search: `%${filters.search}%` });
+    if (filters.status)
+      qb.andWhere('t.status = :status', { status: filters.status });
+    if (filters.category)
+      qb.andWhere('t.category ILIKE :cat', { cat: `%${filters.category}%` });
+    if (filters.search)
+      qb.andWhere('t.name ILIKE :search', { search: `%${filters.search}%` });
 
-    qb.orderBy('t.name', 'ASC').skip((page - 1) * limit).take(limit);
+    qb.orderBy('t.name', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
     const [items, total] = await qb.getManyAndCount();
     return paginate(items, total, page, limit);
   }
 
   async findOne(tenantId: string, id: string): Promise<Tool> {
     const tool = await this.toolRepo.findOne({ where: { id, tenantId } });
-    if (!tool) throw new NotFoundException({ error: 'TOOL_NOT_FOUND', message: `Tool '${id}' not found` });
+    if (!tool)
+      throw new NotFoundException({
+        error: 'TOOL_NOT_FOUND',
+        message: `Tool '${id}' not found`,
+      });
     return tool;
   }
 
-  async update(tenantId: string, id: string, dto: UpdateToolDto): Promise<Tool> {
+  async update(
+    tenantId: string,
+    id: string,
+    dto: UpdateToolDto,
+  ): Promise<Tool> {
     const tool = await this.findOne(tenantId, id);
     Object.assign(tool, dto);
     return this.toolRepo.save(tool);
@@ -72,12 +98,14 @@ export class ToolsService {
     dto: CreateToolMovementDto,
     isAuto = false,
     taskId?: string,
-  ): Promise<ToolMovement> {
+  ): Promise<{ movement: ToolMovement; tool: Tool }> {
     const tool = await this.findOne(tenantId, toolId);
     this.validateMovement(tool, dto.movementType as MovementDirection);
 
     const newStatus =
-      dto.movementType === MovementDirection.OUT ? ToolStatus.IN_USE : ToolStatus.AVAILABLE;
+      dto.movementType === MovementDirection.OUT
+        ? ToolStatus.IN_USE
+        : ToolStatus.AVAILABLE;
 
     await this.toolRepo.update(toolId, { status: newStatus });
 
@@ -91,10 +119,18 @@ export class ToolsService {
       taskId,
     });
 
-    return this.movementRepo.save(movement);
+    const savedMovement = await this.movementRepo.save(movement);
+
+    // Return updated tool so caller can see the new status
+    const updatedTool = await this.findOne(tenantId, toolId);
+
+    return { movement: savedMovement, tool: updatedTool };
   }
 
-  async getMovements(tenantId: string, toolId: string): Promise<ToolMovement[]> {
+  async getMovements(
+    tenantId: string,
+    toolId: string,
+  ): Promise<ToolMovement[]> {
     await this.findOne(tenantId, toolId);
     return this.movementRepo.find({
       where: { toolId },
@@ -104,19 +140,33 @@ export class ToolsService {
 
   // ── Internal: used by W1/W2 ─────────────────────────────────────────────────
 
-  async autoOut(toolId: string, tenantId: string, responsibleId: string, taskId: string): Promise<void> {
+  async autoOut(
+    toolId: string,
+    tenantId: string,
+    responsibleId: string,
+    taskId: string,
+  ): Promise<void> {
     await this.createMovement(
-      tenantId, toolId,
+      tenantId,
+      toolId,
       { movementType: MovementDirection.OUT, responsibleId },
-      true, taskId,
+      true,
+      taskId,
     );
   }
 
-  async autoIn(toolId: string, tenantId: string, responsibleId: string, taskId: string): Promise<void> {
+  async autoIn(
+    toolId: string,
+    tenantId: string,
+    responsibleId: string,
+    taskId: string,
+  ): Promise<void> {
     await this.createMovement(
-      tenantId, toolId,
+      tenantId,
+      toolId,
       { movementType: MovementDirection.IN, responsibleId },
-      true, taskId,
+      true,
+      taskId,
     );
   }
 
@@ -128,14 +178,20 @@ export class ToolsService {
 
   private validateMovement(tool: Tool, direction: MovementDirection): void {
     // RG16 — retired tools can never move OUT
-    if (tool.status === ToolStatus.RETIRED && direction === MovementDirection.OUT) {
+    if (
+      tool.status === ToolStatus.RETIRED &&
+      direction === MovementDirection.OUT
+    ) {
       throw new UnprocessableEntityException({
         error: 'TOOL_RETIRED',
         message: `Tool '${tool.name}' is retired and cannot be deployed`,
       });
     }
     // RG11 — OUT requires available
-    if (direction === MovementDirection.OUT && tool.status !== ToolStatus.AVAILABLE) {
+    if (
+      direction === MovementDirection.OUT &&
+      tool.status !== ToolStatus.AVAILABLE
+    ) {
       throw new UnprocessableEntityException({
         error: 'TOOL_NOT_AVAILABLE',
         message: `Tool '${tool.name}' is not available (current status: ${tool.status})`,
@@ -143,7 +199,10 @@ export class ToolsService {
       });
     }
     // RG15 — IN requires in_use
-    if (direction === MovementDirection.IN && tool.status !== ToolStatus.IN_USE) {
+    if (
+      direction === MovementDirection.IN &&
+      tool.status !== ToolStatus.IN_USE
+    ) {
       throw new UnprocessableEntityException({
         error: 'TOOL_NOT_IN_USE',
         message: `Tool '${tool.name}' is not in use (current status: ${tool.status})`,
