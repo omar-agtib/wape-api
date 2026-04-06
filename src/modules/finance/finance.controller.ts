@@ -27,6 +27,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { PaymentStatus, UserRole } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { WebhookDto } from './dto/webhook.dto';
 
 @ApiTags('finance')
 @ApiBearerAuth('JWT')
@@ -84,20 +85,17 @@ In production, verify the HMAC signature before processing (RG-P07).
 Webhooks without a valid signature should be silently rejected with HTTP 200.
 
 This endpoint:
-1. Creates an immutable transaction record
+1. Creates an immutable transaction record (status=success)
 2. Updates subscription status → active
 3. Recalculates nextBillingDate
-4. Clears accessRestricted flag`,
+4. Clears accessRestricted flag if it was set`,
   })
   @ApiResponse({ status: 201 })
-  processWebhook(
-    @CurrentUser() user: JwtPayload,
-    @Body() body: { transactionId: string; gatewayResponse?: object },
-  ) {
+  processWebhook(@CurrentUser() user: JwtPayload, @Body() dto: WebhookDto) {
     return this.service.processWebhook(
       user.tenantId,
-      body.transactionId ?? `GW-${Date.now()}`,
-      body.gatewayResponse ?? {},
+      dto.transactionId,
+      dto.gatewayResponse ?? {},
     );
   }
 

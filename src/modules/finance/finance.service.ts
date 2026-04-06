@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { Subscription } from './entities/subscription.entity';
 import { SupplierPayment } from './entities/supplier-payment.entity';
 import { SubcontractorPayment } from './entities/subcontractor-payment.entity';
@@ -61,17 +61,17 @@ export class FinanceService {
     dto: CreateSubscriptionDto,
   ): Promise<Subscription> {
     // RG-P02 — one active subscription per tenant
-    const existing = await this.subRepo.findOne({
-      where: { tenantId, status: SubscriptionStatus.ACTIVE },
-    });
+    const existing = await this.subRepo.findOne({ where: { tenantId } });
     if (existing) {
       throw new ConflictException({
-        error: 'SUBSCRIPTION_ALREADY_ACTIVE',
-        message: 'This tenant already has an active subscription (RG-P02)',
-        details: { existingSubscriptionId: existing.id },
+        error: 'SUBSCRIPTION_ALREADY_EXISTS',
+        message: `This tenant already has a subscription (status: ${existing.status}). Only one subscription allowed per tenant (RG-P02).`,
+        details: {
+          existingSubscriptionId: existing.id,
+          existingStatus: existing.status,
+        },
       });
     }
-
     const nextBillingDate = this.calcNextBillingDate(
       dto.billingStartDate,
       dto.billingType,
