@@ -1,0 +1,99 @@
+version: '3.9'
+
+services:
+  # ── API ──────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      target: production
+    container_name: wape-api
+    restart: unless-stopped
+    ports:
+      - '${PORT:-3000}:3000'
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-wape}
+      DB_PASSWORD: ${DB_PASSWORD:-wape_secret}
+      DB_NAME: ${DB_NAME:-wape}
+      DB_SSL: false
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: 7d
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      THROTTLE_TTL: 60000
+      THROTTLE_LIMIT: 100
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - wape-network
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health/ping']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: wape-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-wape}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-wape_secret}
+      POSTGRES_DB: ${DB_NAME:-wape}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wape-network
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-wape} -d ${DB_NAME:-wape}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Redis ─────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: wape-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-}
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - wape-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  wape-network:
+    driver: bridge
