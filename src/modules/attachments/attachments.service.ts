@@ -154,7 +154,9 @@ export class AttachmentsService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
-    let invoice: any = null;
+    let invoice: Awaited<
+      ReturnType<typeof this.invoicesService.createFromAttachment>
+    > | null = null;
 
     try {
       // Step 3 — update attachment
@@ -307,7 +309,7 @@ export class AttachmentsService {
         .where('t.id IN (:...taskIds)', {
           taskIds: taskIds.length > 0 ? taskIds : ['__none__'],
         })
-        .getRawOne();
+        .getRawOne<{ personnel: string; articles: string; tools: string }>();
 
       if (dto.personnelCost === undefined)
         personnelCost = parseFloat(result?.personnel ?? '0');
