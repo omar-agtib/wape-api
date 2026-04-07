@@ -35,4 +35,5 @@ Thumbs.db
 *.swo
 
 # Misc
-.DS_Store.env.production
+.DS_Store
+.env.production
