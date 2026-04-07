@@ -1,0 +1,43 @@
+name: WAPE API — Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/wape-api
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker compose exec api node dist/database/run-migrations.js
+            docker system prune -f
+            echo "Deployment complete — $(date)"
+
+      - name: Health check post-deploy
+        run: |
+          sleep 15
+          curl -f ${{ secrets.APP_URL }}/api/health/ping || exit 1
+          echo "Health check passed"
