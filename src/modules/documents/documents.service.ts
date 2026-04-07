@@ -5,7 +5,7 @@ import { Document } from './document.entity';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { DocumentFilterDto } from './dto/document-filter.dto';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
-import { DocSourceType } from 'src/common/enums';
+import { DocSourceType } from '../../common/enums';
 
 @Injectable()
 export class DocumentsService {
