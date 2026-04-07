@@ -8,10 +8,14 @@ const devFormat = combine(
   timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   errors({ stack: true }),
   printf((info) => {
-    const { level, message, timestamp, context, stack } = info;
+    const level = info.level;
+    const message = String(info.message);
+    const timestamp = info['timestamp'] as string;
+    const context = info['context'] as string | undefined;
+    const stack = info['stack'] as string | undefined;
 
-    const ctx = context ? ` [${String(context)}]` : '';
-    const err = stack ? `\n${String(stack)}` : '';
+    const ctx = context ? ` [${context}]` : '';
+    const err = stack ? `\n${stack}` : '';
 
     return `${timestamp} ${level}${ctx}: ${message}${err}`;
   }),

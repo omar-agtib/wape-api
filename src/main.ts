@@ -5,9 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { createWinstonLogger } from './config/logger.config';
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const compression = require('compression');
+import compression from 'compression';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
