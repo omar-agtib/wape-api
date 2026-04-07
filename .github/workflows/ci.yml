@@ -2,9 +2,9 @@ name: WAPE API — CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, test-ci-cd]
   pull_request:
-    branches: [main]
+    branches: [main, develop, test-ci-cd]
 
 env:
   NODE_VERSION: '20'
@@ -13,7 +13,7 @@ env:
 
 jobs:
   # ── Job 1: Lint + Build ────────────────────────────────────────────────────
-  build:
+    build:
     name: Lint & Build
     runs-on: ubuntu-latest
 
@@ -31,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npm run lint
+        run: npm run lint -- --max-warnings=0   # This forces lint to fail on warnings too
 
       - name: Build
         run: npm run build
@@ -42,7 +42,6 @@ jobs:
           name: dist
           path: dist/
           retention-days: 1
-
   # ── Job 2: Test ────────────────────────────────────────────────────────────
   test:
     name: Unit Tests
