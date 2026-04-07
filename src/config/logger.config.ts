@@ -7,16 +7,19 @@ const devFormat = combine(
   colorize({ all: true }),
   timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   errors({ stack: true }),
-  printf(({ level, message, timestamp, context, stack }) => {
-    const ctx = context ? ` [${context}]` : '';
-    const err = stack ? `\n${stack}` : '';
+  printf((info) => {
+    const { level, message, timestamp, context, stack } = info;
+
+    const ctx = context ? ` [${String(context)}]` : '';
+    const err = stack ? `\n${String(stack)}` : '';
+
     return `${timestamp} ${level}${ctx}: ${message}${err}`;
   }),
 );
 
 const prodFormat = combine(timestamp(), errors({ stack: true }), json());
 
-export const createWinstonLogger = (nodeEnv: string) =>
+export const createWinstonLogger = (nodeEnv: string = 'development') =>
   WinstonModule.createLogger({
     transports: [
       new winston.transports.Console({
