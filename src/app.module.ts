@@ -67,6 +67,7 @@ import { Subscription } from './modules/finance/entities/subscription.entity';
 import { SupplierPayment } from './modules/finance/entities/supplier-payment.entity';
 import { SubcontractorPayment } from './modules/finance/entities/subcontractor-payment.entity';
 import { Transaction } from './modules/finance/entities/transaction.entity';
+import { envValidationSchema } from './config/env.validation';
 
 @Module({
   imports: [
@@ -74,6 +75,11 @@ import { Transaction } from './modules/finance/entities/transaction.entity';
       isGlobal: true,
       load: [appConfig, databaseConfig, jwtConfig, redisConfig],
       envFilePath: '.env',
+      validationSchema: envValidationSchema,
+      validationOptions: {
+        allowUnknown: true,
+        abortEarly: false,
+      },
     }),
 
     ScheduleModule.forRoot(),
