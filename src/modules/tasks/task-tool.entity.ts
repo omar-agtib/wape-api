@@ -16,13 +16,24 @@ export class TaskTool extends BaseEntity {
   toolId: string;
 
   @ApiProperty({ example: 5, description: 'Days / units of tool usage' })
-  @Column({ type: 'decimal', precision: 10, scale: 2, transformer: DecimalTransformer })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   quantity: number;
 
-  @ApiProperty({ example: 1200.00, description: 'Daily cost — overridable, default 0' })
+  @ApiProperty({
+    example: 1200.0,
+    description: 'Daily cost — overridable, default 0',
+  })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
-    name: 'unit_cost', default: 0,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'unit_cost',
+    default: 0,
     transformer: DecimalTransformer,
   })
   unitCost: number;
@@ -31,8 +42,14 @@ export class TaskTool extends BaseEntity {
   @Column({ type: 'varchar', length: 3, default: 'MAD' })
   currency: string;
 
-  @ApiProperty({ example: 6000.00, description: 'quantity × unitCost' })
-  @Column({ type: 'decimal', precision: 15, scale: 2, name: 'total_cost', transformer: DecimalTransformer })
+  @ApiProperty({ example: 6000.0, description: 'quantity × unitCost' })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    name: 'total_cost',
+    transformer: DecimalTransformer,
+  })
   totalCost: number;
 
   @ManyToOne(() => Task, { onDelete: 'CASCADE' })

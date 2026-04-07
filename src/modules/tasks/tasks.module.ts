@@ -16,7 +16,15 @@ import { StockModule } from '../stock/stock.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Task, TaskPersonnel, TaskArticle, TaskTool, Personnel, Article, Tool]),
+    TypeOrmModule.forFeature([
+      Task,
+      TaskPersonnel,
+      TaskArticle,
+      TaskTool,
+      Personnel,
+      Article,
+      Tool,
+    ]),
     ProjectsModule,
     ArticlesModule,
     ToolsModule,

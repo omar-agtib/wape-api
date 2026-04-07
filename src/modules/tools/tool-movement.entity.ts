@@ -14,18 +14,26 @@ export class ToolMovement extends BaseEntity {
   movementType: string;
 
   @ApiProperty()
-  @Column({ type: 'timestamptz', name: 'movement_date', default: () => 'NOW()' })
+  @Column({
+    type: 'timestamptz',
+    name: 'movement_date',
+    default: () => 'NOW()',
+  })
   movementDate: Date;
 
   @ApiProperty({ description: 'Personnel responsible for the movement' })
   @Column({ type: 'uuid', name: 'responsible_id' })
   responsibleId: string;
 
-  @ApiPropertyOptional({ description: 'Task that triggered this movement (auto movements)' })
+  @ApiPropertyOptional({
+    description: 'Task that triggered this movement (auto movements)',
+  })
   @Column({ type: 'uuid', name: 'task_id', nullable: true })
   taskId?: string;
 
-  @ApiProperty({ description: 'TRUE if triggered automatically by a task status change' })
+  @ApiProperty({
+    description: 'TRUE if triggered automatically by a task status change',
+  })
   @Column({ type: 'boolean', name: 'is_auto', default: false })
   isAuto: boolean;
 

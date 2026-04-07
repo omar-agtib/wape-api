@@ -10,15 +10,18 @@ export class ProjectFilterDto extends PaginationDto {
   status?: ProjectStatus;
 
   @ApiPropertyOptional({ description: 'Filter by client ID' })
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   clientId?: string;
 
   @ApiPropertyOptional({ example: '2026-01-01' })
-  @IsOptional() @IsDateString()
+  @IsOptional()
+  @IsDateString()
   startDateFrom?: string;
 
   @ApiPropertyOptional({ example: '2026-12-31' })
-  @IsOptional() @IsDateString()
+  @IsOptional()
+  @IsDateString()
   startDateTo?: string;
 
   @ApiPropertyOptional({ description: 'Search by project name' })

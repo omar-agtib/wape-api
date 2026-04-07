@@ -10,7 +10,10 @@ export class PurchaseOrder extends SoftDeleteEntity {
   @Column({ type: 'uuid', name: 'tenant_id' })
   tenantId: string;
 
-  @ApiProperty({ example: 'BC-2026-0001', description: 'Auto-generated (BC-YYYY-NNNN)' })
+  @ApiProperty({
+    example: 'BC-2026-0001',
+    description: 'Auto-generated (BC-YYYY-NNNN)',
+  })
   @Column({ type: 'varchar', length: 20, name: 'order_number', unique: true })
   orderNumber: string;
 
@@ -27,17 +30,24 @@ export class PurchaseOrder extends SoftDeleteEntity {
   orderDate: Date;
 
   @ApiProperty({ enum: PurchaseOrderStatus })
-  @Column({ type: 'enum', enum: PurchaseOrderStatus, default: PurchaseOrderStatus.DRAFT })
+  @Column({
+    type: 'enum',
+    enum: PurchaseOrderStatus,
+    default: PurchaseOrderStatus.DRAFT,
+  })
   status: PurchaseOrderStatus;
 
   @ApiProperty({ example: 'MAD' })
   @Column({ type: 'varchar', length: 3, default: 'MAD' })
   currency: string;
 
-  @ApiProperty({ example: 16500.00, description: 'Sum of all line totals' })
+  @ApiProperty({ example: 16500.0, description: 'Sum of all line totals' })
   @Column({
-    type: 'decimal', precision: 15, scale: 2,
-    name: 'total_amount', default: 0,
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    name: 'total_amount',
+    default: 0,
     transformer: DecimalTransformer,
   })
   totalAmount: number;

@@ -1,5 +1,5 @@
 import { Column, Entity, ManyToOne, JoinColumn } from 'typeorm';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { Contact } from './contact.entity';
 
@@ -15,7 +15,10 @@ export class ContactDocument extends BaseEntity {
   @Column({ type: 'varchar', length: 255, name: 'document_name' })
   documentName: string;
 
-  @ApiProperty({ example: 'contract', enum: ['contract', 'agreement', 'legal', 'other'] })
+  @ApiProperty({
+    example: 'contract',
+    enum: ['contract', 'agreement', 'legal', 'other'],
+  })
   @Column({ type: 'varchar', length: 50, name: 'document_type' })
   documentType: ContactDocumentType;
 

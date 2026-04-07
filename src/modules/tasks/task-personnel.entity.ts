@@ -16,19 +16,42 @@ export class TaskPersonnel extends BaseEntity {
   personnelId: string;
 
   @ApiProperty({ example: 40, description: 'Planned hours' })
-  @Column({ type: 'decimal', precision: 10, scale: 2, transformer: DecimalTransformer })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   quantity: number;
 
-  @ApiProperty({ example: 150.00, description: 'Cost per hour — copied from personnel, overridable' })
-  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'unit_cost', transformer: DecimalTransformer })
+  @ApiProperty({
+    example: 150.0,
+    description: 'Cost per hour — copied from personnel, overridable',
+  })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'unit_cost',
+    transformer: DecimalTransformer,
+  })
   unitCost: number;
 
   @ApiProperty({ example: 'MAD' })
   @Column({ type: 'varchar', length: 3, default: 'MAD' })
   currency: string;
 
-  @ApiProperty({ example: 6000.00, description: 'quantity × unitCost — computed on save' })
-  @Column({ type: 'decimal', precision: 15, scale: 2, name: 'total_cost', transformer: DecimalTransformer })
+  @ApiProperty({
+    example: 6000.0,
+    description: 'quantity × unitCost — computed on save',
+  })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    name: 'total_cost',
+    transformer: DecimalTransformer,
+  })
   totalCost: number;
 
   @ManyToOne(() => Task, { onDelete: 'CASCADE' })

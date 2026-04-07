@@ -5,10 +5,12 @@ import { ContactType } from '../../../common/enums';
 
 export class ContactFilterDto extends PaginationDto {
   @ApiPropertyOptional({ enum: ContactType })
-  @IsOptional() @IsEnum(ContactType)
+  @IsOptional()
+  @IsEnum(ContactType)
   contactType?: ContactType;
 
   @ApiPropertyOptional({ description: 'Search by legal name, email' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   search?: string;
 }

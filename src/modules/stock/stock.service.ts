@@ -25,7 +25,9 @@ export class StockService {
     private readonly repo: Repository<StockMovement>,
   ) {}
 
-  async createMovement(input: CreateStockMovementInput): Promise<StockMovement> {
+  async createMovement(
+    input: CreateStockMovementInput,
+  ): Promise<StockMovement> {
     const movement = this.repo.create({
       ...input,
       movementDate: new Date(),
@@ -43,14 +45,26 @@ export class StockService {
       .createQueryBuilder('sm')
       .where('sm.tenant_id = :tenantId', { tenantId });
 
-    if (filters.articleId)    qb.andWhere('sm.article_id = :articleId', { articleId: filters.articleId });
-    if (filters.movementType) qb.andWhere('sm.movement_type = :type', { type: filters.movementType });
-    if (filters.projectId)    qb.andWhere('sm.project_id = :projectId', { projectId: filters.projectId });
-    if (filters.taskId)       qb.andWhere('sm.task_id = :taskId', { taskId: filters.taskId });
-    if (filters.dateFrom)     qb.andWhere('sm.movement_date >= :from', { from: filters.dateFrom });
-    if (filters.dateTo)       qb.andWhere('sm.movement_date <= :to', { to: filters.dateTo });
+    if (filters.articleId)
+      qb.andWhere('sm.article_id = :articleId', {
+        articleId: filters.articleId,
+      });
+    if (filters.movementType)
+      qb.andWhere('sm.movement_type = :type', { type: filters.movementType });
+    if (filters.projectId)
+      qb.andWhere('sm.project_id = :projectId', {
+        projectId: filters.projectId,
+      });
+    if (filters.taskId)
+      qb.andWhere('sm.task_id = :taskId', { taskId: filters.taskId });
+    if (filters.dateFrom)
+      qb.andWhere('sm.movement_date >= :from', { from: filters.dateFrom });
+    if (filters.dateTo)
+      qb.andWhere('sm.movement_date <= :to', { to: filters.dateTo });
 
-    qb.orderBy('sm.movement_date', 'DESC').skip((page - 1) * limit).take(limit);
+    qb.orderBy('sm.movement_date', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
     const [items, total] = await qb.getManyAndCount();
     return paginate(items, total, page, limit);

@@ -1,7 +1,20 @@
 import {
-  Controller, Get, Post, Patch, Body, Param, Query, Inject, forwardRef,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { PurchaseOrdersService } from './purchase-orders.service';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { PoFilterDto } from './dto/po-filter.dto';
@@ -26,10 +39,14 @@ export class PurchaseOrdersController {
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.ACCOUNTANT)
   @ApiOperation({
     summary: 'Create a purchase order (draft)',
-    description: '`supplierId` must be a contact with `contactType=supplier` (RG08). Order number `BC-YYYY-NNNN` is auto-generated.',
+    description:
+      '`supplierId` must be a contact with `contactType=supplier` (RG08). Order number `BC-YYYY-NNNN` is auto-generated.',
   })
   @ApiResponse({ status: 201, type: PurchaseOrder })
-  create(@CurrentUser() user: JwtPayload, @Body() dto: CreatePurchaseOrderDto): Promise<PurchaseOrder> {
+  create(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreatePurchaseOrderDto,
+  ): Promise<PurchaseOrder> {
     return this.service.create(user.tenantId, user.sub, dto);
   }
 

@@ -550,7 +550,7 @@ export class FinanceService {
         start: monthStart,
         end: monthEnd,
       })
-      .getRawOne();
+      .getRawOne<{ total: string }>();
 
     // By type this month
     const byType = await this.txRepo
@@ -564,7 +564,7 @@ export class FinanceService {
         end: monthEnd,
       })
       .groupBy('tx.payment_type')
-      .getRawMany();
+      .getRawMany<{ type: string; total: string }>();
 
     // Pending amounts
     const pendingSupplier = await this.spRepo
@@ -574,7 +574,7 @@ export class FinanceService {
       .andWhere('sp.status IN (:...statuses)', {
         statuses: [PaymentStatus.PENDING, PaymentStatus.PARTIALLY_PAID],
       })
-      .getRawOne();
+      .getRawOne<{ total: string }>();
 
     const pendingSubcontractor = await this.scpRepo
       .createQueryBuilder('scp')
@@ -583,7 +583,7 @@ export class FinanceService {
       .andWhere('scp.status IN (:...statuses)', {
         statuses: [PaymentStatus.PENDING, PaymentStatus.PARTIALLY_PAID],
       })
-      .getRawOne();
+      .getRawOne<{ total: string }>();
 
     // Monthly chart data (last 6 months)
     const monthlyData = await this.txRepo
@@ -595,7 +595,7 @@ export class FinanceService {
       .andWhere("tx.payment_date >= NOW() - INTERVAL '6 months'")
       .groupBy("TO_CHAR(tx.payment_date, 'YYYY-MM')")
       .orderBy("TO_CHAR(tx.payment_date, 'YYYY-MM')", 'ASC')
-      .getRawMany();
+      .getRawMany<{ month: string; total: string }>();
 
     // Overdue supplier payments
     const overdueCount = await this.spRepo
@@ -608,7 +608,7 @@ export class FinanceService {
     let subscription = null;
     try {
       subscription = await this.getSubscription(tenantId);
-    } catch (_) {
+    } catch {
       /* no subscription */
     }
 

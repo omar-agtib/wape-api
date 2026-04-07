@@ -1,5 +1,5 @@
 import { Column, Entity } from 'typeorm';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../common/entities/base.entity';
 
 @Entity('support_tickets')

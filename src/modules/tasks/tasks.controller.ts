@@ -1,16 +1,32 @@
 import {
-  Controller, Get, Post, Put, Patch, Delete,
-  Body, Param, Query,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { ChangeTaskStatusDto } from './dto/task-status.dto';
 import {
-  AddTaskPersonnelDto, UpdateTaskPersonnelDto,
-  AddTaskArticleDto, UpdateTaskArticleDto,
-  AddTaskToolDto, UpdateTaskToolDto,
+  AddTaskPersonnelDto,
+  UpdateTaskPersonnelDto,
+  AddTaskArticleDto,
+  UpdateTaskArticleDto,
+  AddTaskToolDto,
+  UpdateTaskToolDto,
 } from './dto/task-resource.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -43,7 +59,11 @@ export class TasksController {
     @Query('status') status?: TaskStatus,
     @Query('search') search?: string,
   ) {
-    return this.service.findAll(user.tenantId, pagination, { projectId, status, search });
+    return this.service.findAll(user.tenantId, pagination, {
+      projectId,
+      status,
+      search,
+    });
   }
 
   @Get(':id')
@@ -55,7 +75,11 @@ export class TasksController {
   @Put(':id')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
   @ApiOperation({ summary: 'Update task' })
-  update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateTaskDto) {
+  update(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateTaskDto,
+  ) {
     return this.service.update(user.tenantId, id, dto);
   }
 
@@ -68,7 +92,11 @@ export class TasksController {
 All steps run in a single DB transaction — any failure rolls back completely.`,
   })
   @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 422, description: 'INSUFFICIENT_STOCK | INVALID_STATUS_TRANSITION | TOOL_NOT_AVAILABLE' })
+  @ApiResponse({
+    status: 422,
+    description:
+      'INSUFFICIENT_STOCK | INVALID_STATUS_TRANSITION | TOOL_NOT_AVAILABLE',
+  })
   changeStatus(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
@@ -80,7 +108,10 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
   @ApiOperation({ summary: 'Soft delete task' })
-  async remove(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<{ message: string }> {
+  async remove(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ): Promise<{ message: string }> {
     await this.service.remove(user.tenantId, id);
     return { message: 'Task deleted successfully' };
   }
@@ -88,8 +119,14 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   // ── Personnel ──────────────────────────────────────────────────────────────
   @Post(':id/personnel')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
-  @ApiOperation({ summary: 'Add personnel to task (unitCost pre-filled, overridable)' })
-  addPersonnel(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Body() dto: AddTaskPersonnelDto) {
+  @ApiOperation({
+    summary: 'Add personnel to task (unitCost pre-filled, overridable)',
+  })
+  addPersonnel(
+    @CurrentUser() u: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: AddTaskPersonnelDto,
+  ) {
     return this.service.addPersonnel(u.tenantId, id, dto);
   }
 
@@ -102,14 +139,23 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   @Put(':id/personnel/:rid')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
   @ApiOperation({ summary: 'Update personnel assignment' })
-  updatePersonnel(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string, @Body() dto: UpdateTaskPersonnelDto) {
+  updatePersonnel(
+    @CurrentUser() u: JwtPayload,
+    @Param('id') id: string,
+    @Param('rid') rid: string,
+    @Body() dto: UpdateTaskPersonnelDto,
+  ) {
     return this.service.updatePersonnel(u.tenantId, id, rid, dto);
   }
 
   @Delete(':id/personnel/:rid')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
   @ApiOperation({ summary: 'Remove personnel from task' })
-  async removePersonnel(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string): Promise<{ message: string }> {
+  async removePersonnel(
+    @CurrentUser() u: JwtPayload,
+    @Param('id') id: string,
+    @Param('rid') rid: string,
+  ): Promise<{ message: string }> {
     await this.service.removePersonnel(u.tenantId, id, rid);
     return { message: 'Personnel removed' };
   }
@@ -117,8 +163,14 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   // ── Articles ───────────────────────────────────────────────────────────────
   @Post(':id/articles')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
-  @ApiOperation({ summary: 'Add article to task (unitCost pre-filled from article.unitPrice)' })
-  addArticle(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Body() dto: AddTaskArticleDto) {
+  @ApiOperation({
+    summary: 'Add article to task (unitCost pre-filled from article.unitPrice)',
+  })
+  addArticle(
+    @CurrentUser() u: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: AddTaskArticleDto,
+  ) {
     return this.service.addArticle(u.tenantId, id, dto);
   }
 
@@ -131,14 +183,23 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   @Put(':id/articles/:rid')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
   @ApiOperation({ summary: 'Update article quantity / cost' })
-  updateArticle(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string, @Body() dto: UpdateTaskArticleDto) {
+  updateArticle(
+    @CurrentUser() u: JwtPayload,
+    @Param('id') id: string,
+    @Param('rid') rid: string,
+    @Body() dto: UpdateTaskArticleDto,
+  ) {
     return this.service.updateArticle(u.tenantId, id, rid, dto);
   }
 
   @Delete(':id/articles/:rid')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
   @ApiOperation({ summary: 'Remove article from task' })
-  async removeArticle(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string): Promise<{ message: string }> {
+  async removeArticle(
+    @CurrentUser() u: JwtPayload,
+    @Param('id') id: string,
+    @Param('rid') rid: string,
+  ): Promise<{ message: string }> {
     await this.service.removeArticle(u.tenantId, id, rid);
     return { message: 'Article removed' };
   }
@@ -147,7 +208,11 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   @Post(':id/tools')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
   @ApiOperation({ summary: 'Add tool to task' })
-  addTool(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Body() dto: AddTaskToolDto) {
+  addTool(
+    @CurrentUser() u: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: AddTaskToolDto,
+  ) {
     return this.service.addTool(u.tenantId, id, dto);
   }
 
@@ -160,14 +225,23 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   @Put(':id/tools/:rid')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
   @ApiOperation({ summary: 'Update tool quantity / cost' })
-  updateTool(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string, @Body() dto: UpdateTaskToolDto) {
+  updateTool(
+    @CurrentUser() u: JwtPayload,
+    @Param('id') id: string,
+    @Param('rid') rid: string,
+    @Body() dto: UpdateTaskToolDto,
+  ) {
     return this.service.updateTool(u.tenantId, id, rid, dto);
   }
 
   @Delete(':id/tools/:rid')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
   @ApiOperation({ summary: 'Remove tool from task' })
-  async removeTool(@CurrentUser() u: JwtPayload, @Param('id') id: string, @Param('rid') rid: string): Promise<{ message: string }> {
+  async removeTool(
+    @CurrentUser() u: JwtPayload,
+    @Param('id') id: string,
+    @Param('rid') rid: string,
+  ): Promise<{ message: string }> {
     await this.service.removeTool(u.tenantId, id, rid);
     return { message: 'Tool removed' };
   }

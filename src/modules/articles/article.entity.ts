@@ -21,10 +21,13 @@ export class Article extends SoftDeleteEntity {
   @Column({ type: 'varchar', length: 50, nullable: true })
   unit?: string;
 
-  @ApiProperty({ example: 85.00 })
+  @ApiProperty({ example: 85.0 })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
-    name: 'unit_price', transformer: DecimalTransformer,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'unit_price',
+    transformer: DecimalTransformer,
   })
   unitPrice: number;
 
@@ -32,34 +35,51 @@ export class Article extends SoftDeleteEntity {
   @Column({ type: 'varchar', length: 3, default: 'MAD' })
   currency: string;
 
-  @ApiProperty({ example: 'WAPE-ACME-20260401-A3F9X2', description: 'Auto-generated, immutable (RG05)' })
+  @ApiProperty({
+    example: 'WAPE-ACME-20260401-A3F9X2',
+    description: 'Auto-generated, immutable (RG05)',
+  })
   @Column({ type: 'varchar', length: 80, name: 'barcode_id', unique: true })
   barcodeId: string;
 
-  @ApiPropertyOptional({ description: 'S3 URL for barcode image PNG (generated async in Sprint 5)' })
+  @ApiPropertyOptional({
+    description: 'S3 URL for barcode image PNG (generated async in Sprint 5)',
+  })
   @Column({ type: 'text', name: 'barcode_image_url', nullable: true })
   barcodeImageUrl?: string;
 
   @ApiProperty({ example: 500, description: 'Physical stock on hand' })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
-    name: 'stock_quantity', default: 0,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'stock_quantity',
+    default: 0,
     transformer: DecimalTransformer,
   })
   stockQuantity: number;
 
   @ApiProperty({ example: 0, description: 'Reserved by on_progress tasks' })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
-    name: 'reserved_quantity', default: 0,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'reserved_quantity',
+    default: 0,
     transformer: DecimalTransformer,
   })
   reservedQuantity: number;
 
-  @ApiProperty({ example: 0, description: 'Cumulative consumed (never decremented)' })
+  @ApiProperty({
+    example: 0,
+    description: 'Cumulative consumed (never decremented)',
+  })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
-    name: 'consumed_quantity', default: 0,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'consumed_quantity',
+    default: 0,
     transformer: DecimalTransformer,
   })
   consumedQuantity: number;

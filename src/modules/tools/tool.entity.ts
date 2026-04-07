@@ -18,7 +18,12 @@ export class Tool extends SoftDeleteEntity {
   category: string;
 
   @ApiPropertyOptional({ example: 'LBH-2024-00123' })
-  @Column({ type: 'varchar', length: 100, name: 'serial_number', nullable: true })
+  @Column({
+    type: 'varchar',
+    length: 100,
+    name: 'serial_number',
+    nullable: true,
+  })
   serialNumber?: string;
 
   @ApiPropertyOptional()

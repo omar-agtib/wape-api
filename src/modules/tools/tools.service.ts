@@ -100,7 +100,7 @@ export class ToolsService {
     taskId?: string,
   ): Promise<{ movement: ToolMovement; tool: Tool }> {
     const tool = await this.findOne(tenantId, toolId);
-    this.validateMovement(tool, dto.movementType as MovementDirection);
+    this.validateMovement(tool, dto.movementType);
 
     const newStatus =
       dto.movementType === MovementDirection.OUT

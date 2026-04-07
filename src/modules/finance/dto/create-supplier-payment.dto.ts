@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
-  IsEnum,
   IsIn,
   IsNotEmpty,
   IsNumber,
@@ -10,7 +9,7 @@ import {
   IsUUID,
   Min,
 } from 'class-validator';
-import { PaymentMethodType, SUPPORTED_CURRENCIES } from '../../../common/enums';
+import { SUPPORTED_CURRENCIES } from '../../../common/enums';
 
 export class CreateSupplierPaymentDto {
   @ApiProperty({ example: 'uuid-of-supplier-contact' })

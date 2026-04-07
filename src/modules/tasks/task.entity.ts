@@ -36,23 +36,35 @@ export class Task extends SoftDeleteEntity {
 
   @ApiProperty({ example: 0 })
   @Column({
-    type: 'decimal', precision: 5, scale: 2, default: 0,
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    default: 0,
     transformer: DecimalTransformer,
   })
   progress: number;
 
-  @ApiProperty({ example: 0, description: 'Auto-computed from personnel + articles + tools costs' })
+  @ApiProperty({
+    example: 0,
+    description: 'Auto-computed from personnel + articles + tools costs',
+  })
   @Column({
-    type: 'decimal', precision: 15, scale: 2,
-    name: 'estimated_cost', default: 0,
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    name: 'estimated_cost',
+    default: 0,
     transformer: DecimalTransformer,
   })
   estimatedCost: number;
 
   @ApiPropertyOptional({ description: 'Manually overridable actual cost' })
   @Column({
-    type: 'decimal', precision: 15, scale: 2,
-    name: 'actual_cost', nullable: true,
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    name: 'actual_cost',
+    nullable: true,
     transformer: DecimalTransformer,
   })
   actualCost?: number;

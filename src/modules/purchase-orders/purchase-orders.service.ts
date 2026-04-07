@@ -1,5 +1,8 @@
 import {
-  Injectable, NotFoundException, UnprocessableEntityException, BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -25,7 +28,11 @@ export class PurchaseOrdersService {
 
   // ── Create ──────────────────────────────────────────────────────────────────
 
-  async create(tenantId: string, userId: string, dto: CreatePurchaseOrderDto): Promise<PurchaseOrder> {
+  async create(
+    tenantId: string,
+    userId: string,
+    dto: CreatePurchaseOrderDto,
+  ): Promise<PurchaseOrder> {
     if (!dto.lines || dto.lines.length === 0) {
       throw new BadRequestException({
         error: 'LINES_REQUIRED',
@@ -35,7 +42,11 @@ export class PurchaseOrdersService {
     }
 
     // RG08 — supplier must be a contact with type=supplier
-    await this.contactsService.verifyType(tenantId, dto.supplierId, ContactType.SUPPLIER);
+    await this.contactsService.verifyType(
+      tenantId,
+      dto.supplierId,
+      ContactType.SUPPLIER,
+    );
 
     // RG14 — verify all articles belong to tenant
     for (const line of dto.lines) {
@@ -46,7 +57,10 @@ export class PurchaseOrdersService {
     const orderNumber = await this.generateOrderNumber(tenantId);
 
     // Calculate total
-    const totalAmount = dto.lines.reduce((sum, l) => sum + l.orderedQuantity * l.unitPrice, 0);
+    const totalAmount = dto.lines.reduce(
+      (sum, l) => sum + l.orderedQuantity * l.unitPrice,
+      0,
+    );
 
     const po = this.poRepo.create({
       tenantId,
@@ -82,33 +96,50 @@ export class PurchaseOrdersService {
 
   // ── Find ────────────────────────────────────────────────────────────────────
 
-  async findAll(tenantId: string, filters: PoFilterDto): Promise<PaginatedResult<PurchaseOrder>> {
+  async findAll(
+    tenantId: string,
+    filters: PoFilterDto,
+  ): Promise<PaginatedResult<PurchaseOrder>> {
     const { page = 1, limit = 20 } = filters;
     const qb = this.poRepo
       .createQueryBuilder('po')
       .where('po.tenant_id = :tenantId', { tenantId })
       .andWhere('po.deleted_at IS NULL');
 
-    if (filters.status)     qb.andWhere('po.status = :status', { status: filters.status });
-    if (filters.supplierId) qb.andWhere('po.supplier_id = :sid', { sid: filters.supplierId });
-    if (filters.projectId)  qb.andWhere('po.project_id = :pid', { pid: filters.projectId });
-    if (filters.dateFrom)   qb.andWhere('po.order_date >= :from', { from: filters.dateFrom });
-    if (filters.dateTo)     qb.andWhere('po.order_date <= :to', { to: filters.dateTo });
+    if (filters.status)
+      qb.andWhere('po.status = :status', { status: filters.status });
+    if (filters.supplierId)
+      qb.andWhere('po.supplier_id = :sid', { sid: filters.supplierId });
+    if (filters.projectId)
+      qb.andWhere('po.project_id = :pid', { pid: filters.projectId });
+    if (filters.dateFrom)
+      qb.andWhere('po.order_date >= :from', { from: filters.dateFrom });
+    if (filters.dateTo)
+      qb.andWhere('po.order_date <= :to', { to: filters.dateTo });
 
-    qb.orderBy('po.order_date', 'DESC').skip((page - 1) * limit).take(limit);
+    qb.orderBy('po.order_date', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
     const [items, total] = await qb.getManyAndCount();
     return paginate(items, total, page, limit);
   }
 
   async findOne(tenantId: string, id: string) {
     const po = await this.poRepo.findOne({ where: { id, tenantId } });
-    if (!po) throw new NotFoundException({ error: 'PO_NOT_FOUND', message: `Purchase order '${id}' not found` });
+    if (!po)
+      throw new NotFoundException({
+        error: 'PO_NOT_FOUND',
+        message: `Purchase order '${id}' not found`,
+      });
 
     const lines = await this.lineRepo.find({ where: { purchaseOrderId: id } });
     return { ...po, lines };
   }
 
-  async findByProject(tenantId: string, projectId: string): Promise<PurchaseOrder[]> {
+  async findByProject(
+    tenantId: string,
+    projectId: string,
+  ): Promise<PurchaseOrder[]> {
     return this.poRepo.find({
       where: { tenantId, projectId },
       order: { orderDate: 'DESC' },
@@ -117,7 +148,10 @@ export class PurchaseOrdersService {
 
   // ── Confirm (W5) ─────────────────────────────────────────────────────────────
 
-  async confirm(tenantId: string, id: string): Promise<{ purchaseOrder: PurchaseOrder; receptionsCreated: number }> {
+  async confirm(
+    tenantId: string,
+    id: string,
+  ): Promise<{ purchaseOrder: PurchaseOrder; receptionsCreated: number }> {
     const po = await this.findOneRaw(tenantId, id);
 
     if (po.status !== PurchaseOrderStatus.DRAFT) {
@@ -147,7 +181,11 @@ export class PurchaseOrdersService {
 
   async findOneRaw(tenantId: string, id: string): Promise<PurchaseOrder> {
     const po = await this.poRepo.findOne({ where: { id, tenantId } });
-    if (!po) throw new NotFoundException({ error: 'PO_NOT_FOUND', message: `Purchase order '${id}' not found` });
+    if (!po)
+      throw new NotFoundException({
+        error: 'PO_NOT_FOUND',
+        message: `Purchase order '${id}' not found`,
+      });
     return po;
   }
 
@@ -160,15 +198,17 @@ export class PurchaseOrdersService {
   }
 
   async evaluatePoStatus(tenantId: string, poId: string): Promise<void> {
-    const lines = await this.lineRepo.find({ where: { purchaseOrderId: poId } });
+    const lines = await this.lineRepo.find({
+      where: { purchaseOrderId: poId },
+    });
     const allDone = lines.every((l) => l.receivedQuantity >= l.orderedQuantity);
     const someDone = lines.some((l) => l.receivedQuantity > 0);
 
     const newStatus = allDone
       ? PurchaseOrderStatus.COMPLETED
       : someDone
-      ? PurchaseOrderStatus.PARTIAL
-      : PurchaseOrderStatus.CONFIRMED;
+        ? PurchaseOrderStatus.PARTIAL
+        : PurchaseOrderStatus.CONFIRMED;
 
     await this.poRepo.update(poId, { status: newStatus });
   }

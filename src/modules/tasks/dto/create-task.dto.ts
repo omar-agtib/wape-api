@@ -1,13 +1,22 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsDateString, IsIn, IsNotEmpty, IsNumber,
-  IsOptional, IsString, IsUUID, MaxLength, Min,
+  IsDateString,
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  Min,
 } from 'class-validator';
 import { SUPPORTED_CURRENCIES } from '../../../common/enums';
 
 export class CreateTaskDto {
   @ApiProperty({ example: 'Fondations Bloc A' })
-  @IsString() @IsNotEmpty() @MaxLength(255)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
   name: string;
 
   @ApiProperty({ example: 'uuid-of-project' })
@@ -27,10 +36,14 @@ export class CreateTaskDto {
   currency: string;
 
   @ApiPropertyOptional({ example: 'Excavation and concrete for foundation' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ example: 0, description: 'Manual progress override (0-100)' })
+  @ApiPropertyOptional({
+    example: 0,
+    description: 'Manual progress override (0-100)',
+  })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)

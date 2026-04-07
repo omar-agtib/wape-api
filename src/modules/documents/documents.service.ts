@@ -5,6 +5,7 @@ import { Document } from './document.entity';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { DocumentFilterDto } from './dto/document-filter.dto';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
+import { DocSourceType } from 'src/common/enums';
 
 @Injectable()
 export class DocumentsService {
@@ -87,7 +88,7 @@ export class DocumentsService {
   ): Promise<Document> {
     const doc = this.repo.create({
       tenantId,
-      sourceType: sourceType as any,
+      sourceType: sourceType as DocSourceType,
       sourceId,
       documentName,
       fileUrl,

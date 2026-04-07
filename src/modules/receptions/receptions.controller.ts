@@ -1,9 +1,13 @@
 import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ReceptionsService } from './receptions.service';
 import { ReceiveDto } from './dto/receive.dto';
 import { ReceptionFilterDto } from './dto/reception-filter.dto';
-import { Reception } from './reception.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums';
@@ -18,9 +22,13 @@ export class ReceptionsController {
   @Get()
   @ApiOperation({
     summary: 'List reception lines (paginated)',
-    description: 'Filter by `purchaseOrderId`, `status` (pending/partial/completed), or `articleId`.',
+    description:
+      'Filter by `purchaseOrderId`, `status` (pending/partial/completed), or `articleId`.',
   })
-  findAll(@CurrentUser() user: JwtPayload, @Query() filters: ReceptionFilterDto) {
+  findAll(
+    @CurrentUser() user: JwtPayload,
+    @Query() filters: ReceptionFilterDto,
+  ) {
     return this.service.findAll(user.tenantId, filters);
   }
 
@@ -39,7 +47,10 @@ export class ReceptionsController {
 All steps run in a single DB transaction.`,
   })
   @ApiResponse({ status: 201 })
-  @ApiResponse({ status: 422, description: 'QUANTITY_EXCEEDS_REMAINING (RG04) | PO_COMPLETED (RG20)' })
+  @ApiResponse({
+    status: 422,
+    description: 'QUANTITY_EXCEEDS_REMAINING (RG04) | PO_COMPLETED (RG20)',
+  })
   receive(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,

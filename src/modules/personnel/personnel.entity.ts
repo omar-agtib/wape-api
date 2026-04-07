@@ -17,9 +17,11 @@ export class Personnel extends SoftDeleteEntity {
   @Column({ type: 'varchar', length: 100 })
   role: string;
 
-  @ApiProperty({ example: 150.00 })
+  @ApiProperty({ example: 150.0 })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
     name: 'cost_per_hour',
     transformer: DecimalTransformer,
   })

@@ -5,22 +5,27 @@ import { PurchaseOrderStatus } from '../../../common/enums';
 
 export class PoFilterDto extends PaginationDto {
   @ApiPropertyOptional({ enum: PurchaseOrderStatus })
-  @IsOptional() @IsEnum(PurchaseOrderStatus)
+  @IsOptional()
+  @IsEnum(PurchaseOrderStatus)
   status?: PurchaseOrderStatus;
 
   @ApiPropertyOptional()
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   supplierId?: string;
 
   @ApiPropertyOptional()
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   projectId?: string;
 
   @ApiPropertyOptional({ example: '2026-01-01' })
-  @IsOptional() @IsDateString()
+  @IsOptional()
+  @IsDateString()
   dateFrom?: string;
 
   @ApiPropertyOptional({ example: '2026-12-31' })
-  @IsOptional() @IsDateString()
+  @IsOptional()
+  @IsDateString()
   dateTo?: string;
 }

@@ -1,4 +1,4 @@
-import { Column, Entity, OneToOne, OneToMany } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SoftDeleteEntity } from '../../common/entities/base.entity';
 import { ProjectStatus } from '../../common/enums';
@@ -23,7 +23,12 @@ export class Project extends SoftDeleteEntity {
   description?: string;
 
   @ApiProperty({ example: 2500000 })
-  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: DecimalTransformer })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   budget: number;
 
   @ApiProperty({ example: 'MAD' })
@@ -42,9 +47,15 @@ export class Project extends SoftDeleteEntity {
   @Column({ type: 'enum', enum: ProjectStatus, default: ProjectStatus.PLANNED })
   status: ProjectStatus;
 
-  @ApiProperty({ example: 0, description: 'Auto-computed: AVG(tasks.progress)' })
+  @ApiProperty({
+    example: 0,
+    description: 'Auto-computed: AVG(tasks.progress)',
+  })
   @Column({
-    type: 'decimal', precision: 5, scale: 2, default: 0,
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    default: 0,
     transformer: DecimalTransformer,
   })
   progress: number;

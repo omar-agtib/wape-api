@@ -1,8 +1,20 @@
 import {
-  Controller, Get, Post, Put, Delete,
-  Body, Param, Query,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
@@ -25,10 +37,14 @@ export class ContactsController {
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
   @ApiOperation({
     summary: 'Create a contact (supplier / client / subcontractor)',
-    description: '`contactType` is **immutable** after creation (RG17). Cannot change supplier → client etc.',
+    description:
+      '`contactType` is **immutable** after creation (RG17). Cannot change supplier → client etc.',
   })
   @ApiResponse({ status: 201, type: Contact })
-  create(@CurrentUser() user: JwtPayload, @Body() dto: CreateContactDto): Promise<Contact> {
+  create(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateContactDto,
+  ): Promise<Contact> {
     return this.service.create(user.tenantId, dto);
   }
 
@@ -75,7 +91,8 @@ export class ContactsController {
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
   @ApiOperation({
     summary: 'Attach a document to a contact',
-    description: 'In Sprint 5, this will also auto-insert into the central documents repository (W9 trigger).',
+    description:
+      'In Sprint 5, this will also auto-insert into the central documents repository (W9 trigger).',
   })
   @ApiResponse({ status: 201, type: ContactDocument })
   addDocument(

@@ -1,9 +1,11 @@
 import { Column, Entity } from 'typeorm';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { SoftDeleteEntity } from '../../../common/entities/base.entity';
 import {
-  BillingType, SubscriptionPlan,
-  SubscriptionStatus, PaymentMethodType,
+  BillingType,
+  SubscriptionPlan,
+  SubscriptionStatus,
+  PaymentMethodType,
 } from '../../../common/enums';
 import { DecimalTransformer } from '../../../common/transformers/decimal.transformer';
 
@@ -22,12 +24,18 @@ export class Subscription extends SoftDeleteEntity {
   billingType: BillingType;
 
   @ApiProperty({ enum: SubscriptionPlan })
-  @Column({ type: 'enum', enum: SubscriptionPlan, default: SubscriptionPlan.STARTER })
+  @Column({
+    type: 'enum',
+    enum: SubscriptionPlan,
+    default: SubscriptionPlan.STARTER,
+  })
   plan: SubscriptionPlan;
 
-  @ApiProperty({ example: 1500.00 })
+  @ApiProperty({ example: 1500.0 })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
     transformer: DecimalTransformer,
   })
   price: number;
@@ -40,7 +48,9 @@ export class Subscription extends SoftDeleteEntity {
   @Column({ type: 'date', name: 'billing_start_date' })
   billingStartDate: string;
 
-  @ApiProperty({ description: 'Auto-calculated: billingStartDate + 1 month or 1 year' })
+  @ApiProperty({
+    description: 'Auto-calculated: billingStartDate + 1 month or 1 year',
+  })
   @Column({ type: 'date', name: 'next_billing_date' })
   nextBillingDate: string;
 
@@ -49,10 +59,17 @@ export class Subscription extends SoftDeleteEntity {
   paymentMethod: PaymentMethodType;
 
   @ApiProperty({ enum: SubscriptionStatus })
-  @Column({ type: 'enum', enum: SubscriptionStatus, default: SubscriptionStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: SubscriptionStatus,
+    default: SubscriptionStatus.PENDING,
+  })
   status: SubscriptionStatus;
 
-  @ApiProperty({ description: 'TRUE after 7 days past expiry — blocks premium routes (RG-P06)' })
+  @ApiProperty({
+    description:
+      'TRUE after 7 days past expiry — blocks premium routes (RG-P06)',
+  })
   @Column({ type: 'boolean', name: 'access_restricted', default: false })
   accessRestricted: boolean;
 }

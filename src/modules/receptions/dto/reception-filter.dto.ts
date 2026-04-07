@@ -5,14 +5,17 @@ import { ReceptionStatus } from '../../../common/enums';
 
 export class ReceptionFilterDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Filter by purchase order' })
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   purchaseOrderId?: string;
 
   @ApiPropertyOptional({ enum: ReceptionStatus })
-  @IsOptional() @IsEnum(ReceptionStatus)
+  @IsOptional()
+  @IsEnum(ReceptionStatus)
   status?: ReceptionStatus;
 
   @ApiPropertyOptional({ description: 'Filter by article' })
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   articleId?: string;
 }

@@ -14,7 +14,8 @@ export class StockController {
   @Get('movements')
   @ApiOperation({
     summary: 'Stock movement history — full audit log',
-    description: 'Filter by article, type (reserved/consumed/incoming), project, task, or date range.',
+    description:
+      'Filter by article, type (reserved/consumed/incoming), project, task, or date range.',
   })
   findAll(@CurrentUser() user: JwtPayload, @Query() filters: StockFilterDto) {
     return this.service.findAll(user.tenantId, filters);

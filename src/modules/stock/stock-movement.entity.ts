@@ -4,7 +4,6 @@ import { BaseEntity } from '../../common/entities/base.entity';
 import { StockMovementType } from '../../common/enums';
 import { DecimalTransformer } from '../../common/transformers/decimal.transformer';
 
-
 @Entity('stock_movements')
 export class StockMovement extends BaseEntity {
   @ApiProperty()
@@ -21,7 +20,9 @@ export class StockMovement extends BaseEntity {
 
   @ApiProperty({ example: 50 })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
     transformer: DecimalTransformer,
   })
   quantity: number;
@@ -43,7 +44,11 @@ export class StockMovement extends BaseEntity {
   responsibleId?: string;
 
   @ApiProperty()
-  @Column({ type: 'timestamptz', name: 'movement_date', default: () => 'NOW()' })
+  @Column({
+    type: 'timestamptz',
+    name: 'movement_date',
+    default: () => 'NOW()',
+  })
   movementDate: Date;
 
   @ApiPropertyOptional()

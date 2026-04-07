@@ -1,8 +1,19 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
 } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { PersonnelService } from './personnel.service';
 import { CreatePersonnelDto } from './dto/create-personnel.dto';
@@ -34,7 +45,11 @@ export class PersonnelController {
   @Get()
   @ApiOperation({ summary: 'List all personnel (paginated)' })
   @ApiQuery({ name: 'role', required: false })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by name or email' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by name or email',
+  })
   @ApiResponse({ status: 200 })
   findAll(
     @CurrentUser() user: JwtPayload,
@@ -60,7 +75,8 @@ export class PersonnelController {
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
   @ApiOperation({
     summary: 'Update personnel member',
-    description: 'Updating costPerHour does NOT affect existing task assignments (cost independence rule).',
+    description:
+      'Updating costPerHour does NOT affect existing task assignments (cost independence rule).',
   })
   @ApiResponse({ status: 200, type: Personnel })
   update(

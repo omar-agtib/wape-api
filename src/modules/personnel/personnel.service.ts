@@ -1,12 +1,19 @@
 import {
-  Injectable, NotFoundException, ConflictException, UnprocessableEntityException,
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Personnel } from './personnel.entity';
 import { CreatePersonnelDto } from './dto/create-personnel.dto';
 import { UpdatePersonnelDto } from './dto/update-personnel.dto';
-import { PaginationDto, paginate, PaginatedResult } from '../../common/dto/pagination.dto';
+import {
+  PaginationDto,
+  paginate,
+  PaginatedResult,
+} from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class PersonnelService {
@@ -74,12 +81,18 @@ export class PersonnelService {
     return personnel;
   }
 
-  async update(tenantId: string, id: string, dto: UpdatePersonnelDto): Promise<Personnel> {
+  async update(
+    tenantId: string,
+    id: string,
+    dto: UpdatePersonnelDto,
+  ): Promise<Personnel> {
     const personnel = await this.findOne(tenantId, id);
 
     // Check email uniqueness if changing email
     if (dto.email && dto.email !== personnel.email) {
-      const exists = await this.repo.findOne({ where: { tenantId, email: dto.email } });
+      const exists = await this.repo.findOne({
+        where: { tenantId, email: dto.email },
+      });
       if (exists) {
         throw new ConflictException({
           error: 'EMAIL_ALREADY_EXISTS',
@@ -99,7 +112,10 @@ export class PersonnelService {
     await this.repo.softRemove(personnel);
   }
 
-  async verifyBelongsToTenant(tenantId: string, id: string): Promise<Personnel> {
+  async verifyBelongsToTenant(
+    tenantId: string,
+    id: string,
+  ): Promise<Personnel> {
     const personnel = await this.repo.findOne({ where: { id, tenantId } });
     if (!personnel) {
       throw new UnprocessableEntityException({

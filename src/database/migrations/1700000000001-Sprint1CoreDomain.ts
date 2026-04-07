@@ -22,7 +22,9 @@ export class Sprint1CoreDomain1700000000001 implements MigrationInterface {
         UNIQUE(tenant_id, email)
       );
     `);
-    await queryRunner.query(`CREATE INDEX idx_personnel_tenant ON personnel(tenant_id);`);
+    await queryRunner.query(
+      `CREATE INDEX idx_personnel_tenant ON personnel(tenant_id);`,
+    );
 
     // ── Projects ──────────────────────────────────────────────────────────────
     await queryRunner.query(`
@@ -44,7 +46,9 @@ export class Sprint1CoreDomain1700000000001 implements MigrationInterface {
         "deleted_at"  TIMESTAMPTZ
       );
     `);
-    await queryRunner.query(`CREATE INDEX idx_projects_tenant_status ON projects(tenant_id, status) WHERE deleted_at IS NULL;`);
+    await queryRunner.query(
+      `CREATE INDEX idx_projects_tenant_status ON projects(tenant_id, status) WHERE deleted_at IS NULL;`,
+    );
 
     // ── Finance Snapshots ─────────────────────────────────────────────────────
     await queryRunner.query(`
@@ -83,8 +87,12 @@ export class Sprint1CoreDomain1700000000001 implements MigrationInterface {
         "deleted_at"     TIMESTAMPTZ
       );
     `);
-    await queryRunner.query(`CREATE INDEX idx_tasks_project_status ON tasks(project_id, status);`);
-    await queryRunner.query(`CREATE INDEX idx_tasks_tenant ON tasks(tenant_id);`);
+    await queryRunner.query(
+      `CREATE INDEX idx_tasks_project_status ON tasks(project_id, status);`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_tasks_tenant ON tasks(tenant_id);`,
+    );
 
     // ── Task Personnel ────────────────────────────────────────────────────────
     await queryRunner.query(`
@@ -100,7 +108,9 @@ export class Sprint1CoreDomain1700000000001 implements MigrationInterface {
         "updated_at"   TIMESTAMPTZ   NOT NULL DEFAULT NOW()
       );
     `);
-    await queryRunner.query(`CREATE INDEX idx_task_personnel_task ON task_personnel(task_id);`);
+    await queryRunner.query(
+      `CREATE INDEX idx_task_personnel_task ON task_personnel(task_id);`,
+    );
 
     // ── W-P1 Trigger: task status change → project status + progress ──────────
     await queryRunner.query(`
@@ -151,7 +161,13 @@ export class Sprint1CoreDomain1700000000001 implements MigrationInterface {
     `);
 
     // ── updated_at triggers for new tables ────────────────────────────────────
-    for (const table of ['personnel', 'projects', 'project_finance_snapshots', 'tasks', 'task_personnel']) {
+    for (const table of [
+      'personnel',
+      'projects',
+      'project_finance_snapshots',
+      'tasks',
+      'task_personnel',
+    ]) {
       await queryRunner.query(`
         DROP TRIGGER IF EXISTS trg_${table}_updated_at ON "${table}";
         CREATE TRIGGER trg_${table}_updated_at
@@ -162,11 +178,17 @@ export class Sprint1CoreDomain1700000000001 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TRIGGER IF EXISTS trg_tasks_update_project ON tasks;`);
-    await queryRunner.query(`DROP FUNCTION IF EXISTS fn_update_project_from_tasks;`);
+    await queryRunner.query(
+      `DROP TRIGGER IF EXISTS trg_tasks_update_project ON tasks;`,
+    );
+    await queryRunner.query(
+      `DROP FUNCTION IF EXISTS fn_update_project_from_tasks;`,
+    );
     await queryRunner.query(`DROP TABLE IF EXISTS "task_personnel";`);
     await queryRunner.query(`DROP TABLE IF EXISTS "tasks";`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "project_finance_snapshots";`);
+    await queryRunner.query(
+      `DROP TABLE IF EXISTS "project_finance_snapshots";`,
+    );
     await queryRunner.query(`DROP TABLE IF EXISTS "projects";`);
     await queryRunner.query(`DROP TABLE IF EXISTS "personnel";`);
   }

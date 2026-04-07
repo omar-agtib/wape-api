@@ -1,5 +1,7 @@
 import {
-  Injectable, NotFoundException, UnprocessableEntityException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -17,24 +19,36 @@ import { ProjectsService } from '../projects/projects.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import {
-  AddTaskPersonnelDto, UpdateTaskPersonnelDto,
-  AddTaskArticleDto, UpdateTaskArticleDto,
-  AddTaskToolDto, UpdateTaskToolDto,
+  AddTaskPersonnelDto,
+  UpdateTaskPersonnelDto,
+  AddTaskArticleDto,
+  UpdateTaskArticleDto,
+  AddTaskToolDto,
+  UpdateTaskToolDto,
 } from './dto/task-resource.dto';
 import { TaskStatus, StockMovementType, ToolStatus } from '../../common/enums';
-import { PaginationDto, paginate, PaginatedResult } from '../../common/dto/pagination.dto';
+import {
+  PaginationDto,
+  paginate,
+  PaginatedResult,
+} from '../../common/dto/pagination.dto';
 import { MovementDirection } from '../tools/dto/tool-movement.dto';
+import { ToolMovement } from '../tools/tool-movement.entity';
 
 @Injectable()
 export class TasksService {
   constructor(
-    @InjectRepository(Task)       private readonly taskRepo: Repository<Task>,
-    @InjectRepository(TaskPersonnel) private readonly tpRepo: Repository<TaskPersonnel>,
-    @InjectRepository(TaskArticle)   private readonly taRepo: Repository<TaskArticle>,
-    @InjectRepository(TaskTool)      private readonly ttRepo: Repository<TaskTool>,
-    @InjectRepository(Personnel)     private readonly personnelRepo: Repository<Personnel>,
-    @InjectRepository(Article)       private readonly articleRepo: Repository<Article>,
-    @InjectRepository(Tool)          private readonly toolRepo: Repository<Tool>,
+    @InjectRepository(Task) private readonly taskRepo: Repository<Task>,
+    @InjectRepository(TaskPersonnel)
+    private readonly tpRepo: Repository<TaskPersonnel>,
+    @InjectRepository(TaskArticle)
+    private readonly taRepo: Repository<TaskArticle>,
+    @InjectRepository(TaskTool) private readonly ttRepo: Repository<TaskTool>,
+    @InjectRepository(Personnel)
+    private readonly personnelRepo: Repository<Personnel>,
+    @InjectRepository(Article)
+    private readonly articleRepo: Repository<Article>,
+    @InjectRepository(Tool) private readonly toolRepo: Repository<Tool>,
     private readonly articlesService: ArticlesService,
     private readonly toolsService: ToolsService,
     private readonly stockService: StockService,
@@ -75,11 +89,16 @@ export class TasksService {
       .where('t.tenant_id = :tenantId', { tenantId })
       .andWhere('t.deleted_at IS NULL');
 
-    if (filters.projectId) qb.andWhere('t.project_id = :pid', { pid: filters.projectId });
-    if (filters.status)    qb.andWhere('t.status = :status', { status: filters.status });
-    if (filters.search)    qb.andWhere('t.name ILIKE :s', { s: `%${filters.search}%` });
+    if (filters.projectId)
+      qb.andWhere('t.project_id = :pid', { pid: filters.projectId });
+    if (filters.status)
+      qb.andWhere('t.status = :status', { status: filters.status });
+    if (filters.search)
+      qb.andWhere('t.name ILIKE :s', { s: `%${filters.search}%` });
 
-    qb.orderBy('t.start_date', 'ASC').skip((page - 1) * limit).take(limit);
+    qb.orderBy('t.start_date', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
     const [items, total] = await qb.getManyAndCount();
     return paginate(items, total, page, limit);
   }
@@ -94,18 +113,27 @@ export class TasksService {
     return { ...task, personnel, articles, tools };
   }
 
-  async update(tenantId: string, id: string, dto: UpdateTaskDto): Promise<Task> {
+  async update(
+    tenantId: string,
+    id: string,
+    dto: UpdateTaskDto,
+  ): Promise<Task> {
     const task = await this.findOneRaw(tenantId, id);
     if (dto.startDate || dto.endDate) {
       const s = dto.startDate ?? task.startDate;
       const e = dto.endDate ?? task.endDate;
       if (new Date(e) < new Date(s)) {
-        throw new UnprocessableEntityException({ error: 'INVALID_DATE_RANGE', message: 'endDate must be >= startDate', field: 'endDate' });
+        throw new UnprocessableEntityException({
+          error: 'INVALID_DATE_RANGE',
+          message: 'endDate must be >= startDate',
+          field: 'endDate',
+        });
       }
     }
     Object.assign(task, dto);
     const saved = await this.taskRepo.save(task);
-    if (dto.progress !== undefined) await this.triggerWP1(tenantId, task.projectId);
+    if (dto.progress !== undefined)
+      await this.triggerWP1(tenantId, task.projectId);
     return saved;
   }
 
@@ -116,7 +144,11 @@ export class TasksService {
 
   // ── Status Engine + W1/W2 ───────────────────────────────────────────────────
 
-  async changeStatus(tenantId: string, id: string, newStatus: TaskStatus): Promise<Task> {
+  async changeStatus(
+    tenantId: string,
+    id: string,
+    newStatus: TaskStatus,
+  ): Promise<Task> {
     const task = await this.findOneRaw(tenantId, id);
     this.validateTransition(task.status, newStatus);
 
@@ -143,7 +175,9 @@ export class TasksService {
     // Step 1: Verify ALL articles have sufficient stock before touching anything (RG02)
     const insufficientList: object[] = [];
     for (const ta of articles) {
-      const article = await this.articleRepo.findOne({ where: { id: ta.articleId } });
+      const article = await this.articleRepo.findOne({
+        where: { id: ta.articleId },
+      });
       if (!article) continue;
       const available = article.stockQuantity - article.reservedQuantity;
       if (available < ta.quantity) {
@@ -158,7 +192,8 @@ export class TasksService {
     if (insufficientList.length > 0) {
       throw new UnprocessableEntityException({
         error: 'INSUFFICIENT_STOCK',
-        message: 'Insufficient stock for one or more articles. Task cannot be started.',
+        message:
+          'Insufficient stock for one or more articles. Task cannot be started.',
         details: { insufficientArticles: insufficientList },
       });
     }
@@ -172,7 +207,10 @@ export class TasksService {
       // Reserve stock for each article
       for (const ta of articles) {
         await queryRunner.manager.increment(
-          Article, { id: ta.articleId }, 'reservedQuantity', ta.quantity,
+          Article,
+          { id: ta.articleId },
+          'reservedQuantity',
+          ta.quantity,
         );
         await this.stockService.createMovement({
           tenantId,
@@ -188,21 +226,21 @@ export class TasksService {
       for (const tt of tools) {
         const tool = await this.toolRepo.findOne({ where: { id: tt.toolId } });
         if (!tool) continue;
-        await queryRunner.manager.update(Tool, tt.toolId, { status: ToolStatus.IN_USE });
+        await queryRunner.manager.update(Tool, tt.toolId, {
+          status: ToolStatus.IN_USE,
+        });
 
         // Create auto tool movement record
-        const movement = queryRunner.manager.create(
-          require('../tools/tool-movement.entity').ToolMovement,
-          {
-            toolId: tt.toolId,
-            movementType: MovementDirection.OUT,
-           responsibleId: task.tenantId, // fallback
-            taskId: task.id,
-            isAuto: true,
-            movementDate: new Date(),
-            notes: `Auto OUT — task '${task.name}' started`,
-          },
-        );
+        // executeW1
+        const movement = queryRunner.manager.create(ToolMovement, {
+          toolId: tt.toolId,
+          movementType: MovementDirection.OUT,
+          responsibleId: task.tenantId,
+          taskId: task.id,
+          isAuto: true,
+          movementDate: new Date(),
+          notes: `Auto OUT — task '${task.name}' started`,
+        });
         await queryRunner.manager.save(movement);
       }
 
@@ -227,7 +265,9 @@ export class TasksService {
     try {
       // Consume stock for each article
       for (const ta of articles) {
-        const article = await queryRunner.manager.findOne(Article, { where: { id: ta.articleId } });
+        const article = await queryRunner.manager.findOne(Article, {
+          where: { id: ta.articleId },
+        });
         if (!article) continue;
 
         const newStock = article.stockQuantity - ta.quantity;
@@ -256,20 +296,20 @@ export class TasksService {
 
       // IN movement for each tool — return to available
       for (const tt of tools) {
-        await queryRunner.manager.update(Tool, tt.toolId, { status: ToolStatus.AVAILABLE });
+        await queryRunner.manager.update(Tool, tt.toolId, {
+          status: ToolStatus.AVAILABLE,
+        });
 
-        const movement = queryRunner.manager.create(
-          require('../tools/tool-movement.entity').ToolMovement,
-          {
-            toolId: tt.toolId,
-            movementType: MovementDirection.IN,
-            responsibleId: task.tenantId,
-            taskId: task.id,
-            isAuto: true,
-            movementDate: new Date(),
-            notes: `Auto IN — task '${task.name}' completed`,
-          },
-        );
+        // executeW2
+        const movement = queryRunner.manager.create(ToolMovement, {
+          toolId: tt.toolId,
+          movementType: MovementDirection.IN,
+          responsibleId: task.tenantId,
+          taskId: task.id,
+          isAuto: true,
+          movementDate: new Date(),
+          notes: `Auto IN — task '${task.name}' completed`,
+        });
         await queryRunner.manager.save(movement);
       }
 
@@ -289,7 +329,8 @@ export class TasksService {
       select: ['status', 'progress'],
     });
     await this.projectsService.recalculateFromTasks(
-      tenantId, projectId,
+      tenantId,
+      projectId,
       tasks.map((t) => ({ status: t.status, progress: t.progress })),
     );
   }
@@ -310,20 +351,43 @@ export class TasksService {
   }
 
   // ── Personnel resource ───────────────────────────────────────────────────────
-  async addPersonnel(tenantId: string, taskId: string, dto: AddTaskPersonnelDto): Promise<TaskPersonnel> {
+  async addPersonnel(
+    tenantId: string,
+    taskId: string,
+    dto: AddTaskPersonnelDto,
+  ): Promise<TaskPersonnel> {
     await this.findOneRaw(tenantId, taskId);
-    const personnel = await this.personnelRepo.findOne({ where: { id: dto.personnelId, tenantId } });
-    if (!personnel) throw new UnprocessableEntityException({ error: 'CROSS_TENANT_ACCESS', message: `Personnel not found in this tenant`, field: 'personnelId' });
+    const personnel = await this.personnelRepo.findOne({
+      where: { id: dto.personnelId, tenantId },
+    });
+    if (!personnel)
+      throw new UnprocessableEntityException({
+        error: 'CROSS_TENANT_ACCESS',
+        message: `Personnel not found in this tenant`,
+        field: 'personnelId',
+      });
 
     const unitCost = dto.unitCost ?? personnel.costPerHour;
     const currency = dto.currency ?? personnel.currency;
-    const tp = this.tpRepo.create({ taskId, personnelId: dto.personnelId, quantity: dto.quantity, unitCost, currency, totalCost: dto.quantity * unitCost });
+    const tp = this.tpRepo.create({
+      taskId,
+      personnelId: dto.personnelId,
+      quantity: dto.quantity,
+      unitCost,
+      currency,
+      totalCost: dto.quantity * unitCost,
+    });
     const saved = await this.tpRepo.save(tp);
     await this.recalcCost(taskId);
     return saved;
   }
 
-  async updatePersonnel(tenantId: string, taskId: string, rid: string, dto: UpdateTaskPersonnelDto): Promise<TaskPersonnel> {
+  async updatePersonnel(
+    tenantId: string,
+    taskId: string,
+    rid: string,
+    dto: UpdateTaskPersonnelDto,
+  ): Promise<TaskPersonnel> {
     await this.findOneRaw(tenantId, taskId);
     const tp = await this.findTpOrFail(taskId, rid);
     if (dto.quantity !== undefined) tp.quantity = dto.quantity;
@@ -335,33 +399,63 @@ export class TasksService {
     return saved;
   }
 
-  async removePersonnel(tenantId: string, taskId: string, rid: string): Promise<void> {
+  async removePersonnel(
+    tenantId: string,
+    taskId: string,
+    rid: string,
+  ): Promise<void> {
     await this.findOneRaw(tenantId, taskId);
     const tp = await this.findTpOrFail(taskId, rid);
     await this.tpRepo.remove(tp);
     await this.recalcCost(taskId);
   }
 
-  async listPersonnel(tenantId: string, taskId: string): Promise<TaskPersonnel[]> {
+  async listPersonnel(
+    tenantId: string,
+    taskId: string,
+  ): Promise<TaskPersonnel[]> {
     await this.findOneRaw(tenantId, taskId);
     return this.tpRepo.find({ where: { taskId }, relations: ['personnel'] });
   }
 
   // ── Articles resource ────────────────────────────────────────────────────────
-  async addArticle(tenantId: string, taskId: string, dto: AddTaskArticleDto): Promise<TaskArticle> {
+  async addArticle(
+    tenantId: string,
+    taskId: string,
+    dto: AddTaskArticleDto,
+  ): Promise<TaskArticle> {
     await this.findOneRaw(tenantId, taskId);
-    const article = await this.articleRepo.findOne({ where: { id: dto.articleId, tenantId } });
-    if (!article) throw new UnprocessableEntityException({ error: 'CROSS_TENANT_ACCESS', message: 'Article not found in this tenant', field: 'articleId' });
+    const article = await this.articleRepo.findOne({
+      where: { id: dto.articleId, tenantId },
+    });
+    if (!article)
+      throw new UnprocessableEntityException({
+        error: 'CROSS_TENANT_ACCESS',
+        message: 'Article not found in this tenant',
+        field: 'articleId',
+      });
 
     const unitCost = dto.unitCost ?? article.unitPrice;
     const currency = dto.currency ?? article.currency;
-    const ta = this.taRepo.create({ taskId, articleId: dto.articleId, quantity: dto.quantity, unitCost, currency, totalCost: dto.quantity * unitCost });
+    const ta = this.taRepo.create({
+      taskId,
+      articleId: dto.articleId,
+      quantity: dto.quantity,
+      unitCost,
+      currency,
+      totalCost: dto.quantity * unitCost,
+    });
     const saved = await this.taRepo.save(ta);
     await this.recalcCost(taskId);
     return saved;
   }
 
-  async updateArticle(tenantId: string, taskId: string, rid: string, dto: UpdateTaskArticleDto): Promise<TaskArticle> {
+  async updateArticle(
+    tenantId: string,
+    taskId: string,
+    rid: string,
+    dto: UpdateTaskArticleDto,
+  ): Promise<TaskArticle> {
     await this.findOneRaw(tenantId, taskId);
     const ta = await this.findTaOrFail(taskId, rid);
     if (dto.quantity !== undefined) ta.quantity = dto.quantity;
@@ -373,7 +467,11 @@ export class TasksService {
     return saved;
   }
 
-  async removeArticle(tenantId: string, taskId: string, rid: string): Promise<void> {
+  async removeArticle(
+    tenantId: string,
+    taskId: string,
+    rid: string,
+  ): Promise<void> {
     await this.findOneRaw(tenantId, taskId);
     const ta = await this.findTaOrFail(taskId, rid);
     await this.taRepo.remove(ta);
@@ -386,20 +484,43 @@ export class TasksService {
   }
 
   // ── Tools resource ───────────────────────────────────────────────────────────
-  async addTool(tenantId: string, taskId: string, dto: AddTaskToolDto): Promise<TaskTool> {
+  async addTool(
+    tenantId: string,
+    taskId: string,
+    dto: AddTaskToolDto,
+  ): Promise<TaskTool> {
     await this.findOneRaw(tenantId, taskId);
-    const tool = await this.toolRepo.findOne({ where: { id: dto.toolId, tenantId } });
-    if (!tool) throw new UnprocessableEntityException({ error: 'CROSS_TENANT_ACCESS', message: 'Tool not found in this tenant', field: 'toolId' });
+    const tool = await this.toolRepo.findOne({
+      where: { id: dto.toolId, tenantId },
+    });
+    if (!tool)
+      throw new UnprocessableEntityException({
+        error: 'CROSS_TENANT_ACCESS',
+        message: 'Tool not found in this tenant',
+        field: 'toolId',
+      });
 
     const unitCost = dto.unitCost ?? 0;
     const currency = dto.currency ?? 'MAD';
-    const tt = this.ttRepo.create({ taskId, toolId: dto.toolId, quantity: dto.quantity, unitCost, currency, totalCost: dto.quantity * unitCost });
+    const tt = this.ttRepo.create({
+      taskId,
+      toolId: dto.toolId,
+      quantity: dto.quantity,
+      unitCost,
+      currency,
+      totalCost: dto.quantity * unitCost,
+    });
     const saved = await this.ttRepo.save(tt);
     await this.recalcCost(taskId);
     return saved;
   }
 
-  async updateTool(tenantId: string, taskId: string, rid: string, dto: UpdateTaskToolDto): Promise<TaskTool> {
+  async updateTool(
+    tenantId: string,
+    taskId: string,
+    rid: string,
+    dto: UpdateTaskToolDto,
+  ): Promise<TaskTool> {
     await this.findOneRaw(tenantId, taskId);
     const tt = await this.findTtOrFail(taskId, rid);
     if (dto.quantity !== undefined) tt.quantity = dto.quantity;
@@ -411,7 +532,11 @@ export class TasksService {
     return saved;
   }
 
-  async removeTool(tenantId: string, taskId: string, rid: string): Promise<void> {
+  async removeTool(
+    tenantId: string,
+    taskId: string,
+    rid: string,
+  ): Promise<void> {
     await this.findOneRaw(tenantId, taskId);
     const tt = await this.findTtOrFail(taskId, rid);
     await this.ttRepo.remove(tt);
@@ -426,7 +551,11 @@ export class TasksService {
   // ── Private helpers ──────────────────────────────────────────────────────────
   async findOneRaw(tenantId: string, id: string): Promise<Task> {
     const task = await this.taskRepo.findOne({ where: { id, tenantId } });
-    if (!task) throw new NotFoundException({ error: 'TASK_NOT_FOUND', message: `Task '${id}' not found` });
+    if (!task)
+      throw new NotFoundException({
+        error: 'TASK_NOT_FOUND',
+        message: `Task '${id}' not found`,
+      });
     return task;
   }
 
@@ -443,21 +572,36 @@ export class TasksService {
     await this.taskRepo.update(taskId, { estimatedCost: total });
   }
 
-  private async findTpOrFail(taskId: string, id: string): Promise<TaskPersonnel> {
+  private async findTpOrFail(
+    taskId: string,
+    id: string,
+  ): Promise<TaskPersonnel> {
     const r = await this.tpRepo.findOne({ where: { id, taskId } });
-    if (!r) throw new NotFoundException({ error: 'TASK_RESOURCE_NOT_FOUND', message: `Personnel resource '${id}' not found` });
+    if (!r)
+      throw new NotFoundException({
+        error: 'TASK_RESOURCE_NOT_FOUND',
+        message: `Personnel resource '${id}' not found`,
+      });
     return r;
   }
 
   private async findTaOrFail(taskId: string, id: string): Promise<TaskArticle> {
     const r = await this.taRepo.findOne({ where: { id, taskId } });
-    if (!r) throw new NotFoundException({ error: 'TASK_RESOURCE_NOT_FOUND', message: `Article resource '${id}' not found` });
+    if (!r)
+      throw new NotFoundException({
+        error: 'TASK_RESOURCE_NOT_FOUND',
+        message: `Article resource '${id}' not found`,
+      });
     return r;
   }
 
   private async findTtOrFail(taskId: string, id: string): Promise<TaskTool> {
     const r = await this.ttRepo.findOne({ where: { id, taskId } });
-    if (!r) throw new NotFoundException({ error: 'TASK_RESOURCE_NOT_FOUND', message: `Tool resource '${id}' not found` });
+    if (!r)
+      throw new NotFoundException({
+        error: 'TASK_RESOURCE_NOT_FOUND',
+        message: `Tool resource '${id}' not found`,
+      });
     return r;
   }
 }

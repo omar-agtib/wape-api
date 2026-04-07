@@ -1,12 +1,18 @@
 import {
-  Injectable, NotFoundException, UnprocessableEntityException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Article } from './article.entity';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
-import { PaginationDto, paginate, PaginatedResult } from '../../common/dto/pagination.dto';
+import {
+  PaginationDto,
+  paginate,
+  PaginatedResult,
+} from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class ArticlesService {
@@ -15,14 +21,17 @@ export class ArticlesService {
     private readonly repo: Repository<Article>,
   ) {}
 
-  async create(tenantId: string, dto: CreateArticleDto): Promise<Article & { availableQuantity: number }> {
+  async create(
+    tenantId: string,
+    dto: CreateArticleDto,
+  ): Promise<Article & { availableQuantity: number }> {
     const barcodeId = this.generateBarcodeId(tenantId);
 
     const article = this.repo.create({
       ...dto,
       tenantId,
       barcodeId,
-     barcodeImageUrl: undefined,        // Generated async (BullMQ queue — Sprint 5)
+      barcodeImageUrl: undefined, // Generated async (BullMQ queue — Sprint 5)
       stockQuantity: dto.initialStock ?? 0,
       reservedQuantity: 0,
       consumedQuantity: 0,
@@ -43,22 +52,34 @@ export class ArticlesService {
       .where('a.tenant_id = :tenantId', { tenantId })
       .andWhere('a.deleted_at IS NULL');
 
-    if (filters.category) qb.andWhere('a.category ILIKE :cat', { cat: `%${filters.category}%` });
-    if (filters.search)   qb.andWhere('a.name ILIKE :search', { search: `%${filters.search}%` });
+    if (filters.category)
+      qb.andWhere('a.category ILIKE :cat', { cat: `%${filters.category}%` });
+    if (filters.search)
+      qb.andWhere('a.name ILIKE :search', { search: `%${filters.search}%` });
 
-    qb.orderBy('a.name', 'ASC').skip((page - 1) * limit).take(limit);
+    qb.orderBy('a.name', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
     const [items, total] = await qb.getManyAndCount();
 
     return paginate(
       items.map((a) => this.withComputed(a)),
-      total, page, limit,
+      total,
+      page,
+      limit,
     );
   }
 
-  async findOne(tenantId: string, id: string): Promise<Article & { availableQuantity: number }> {
+  async findOne(
+    tenantId: string,
+    id: string,
+  ): Promise<Article & { availableQuantity: number }> {
     const article = await this.repo.findOne({ where: { id, tenantId } });
     if (!article) {
-      throw new NotFoundException({ error: 'ARTICLE_NOT_FOUND', message: `Article '${id}' not found` });
+      throw new NotFoundException({
+        error: 'ARTICLE_NOT_FOUND',
+        message: `Article '${id}' not found`,
+      });
     }
     return this.withComputed(article);
   }
@@ -84,7 +105,10 @@ export class ArticlesService {
   async findOneRaw(tenantId: string, id: string): Promise<Article> {
     const article = await this.repo.findOne({ where: { id, tenantId } });
     if (!article) {
-      throw new NotFoundException({ error: 'ARTICLE_NOT_FOUND', message: `Article '${id}' not found` });
+      throw new NotFoundException({
+        error: 'ARTICLE_NOT_FOUND',
+        message: `Article '${id}' not found`,
+      });
     }
     return article;
   }
@@ -92,7 +116,11 @@ export class ArticlesService {
   /** Used by W1 — check and reserve stock */
   async reserveStock(id: string, quantity: number): Promise<void> {
     const article = await this.repo.findOne({ where: { id } });
-    if (!article) throw new NotFoundException({ error: 'ARTICLE_NOT_FOUND', message: `Article '${id}' not found` });
+    if (!article)
+      throw new NotFoundException({
+        error: 'ARTICLE_NOT_FOUND',
+        message: `Article '${id}' not found`,
+      });
 
     const available = article.stockQuantity - article.reservedQuantity;
     if (available < quantity) {
@@ -142,7 +170,9 @@ export class ArticlesService {
     await this.repo.increment({ id }, 'stockQuantity', quantity);
   }
 
-  private withComputed(article: Article): Article & { availableQuantity: number } {
+  private withComputed(
+    article: Article,
+  ): Article & { availableQuantity: number } {
     return {
       ...article,
       availableQuantity: article.stockQuantity - article.reservedQuantity,
@@ -150,7 +180,11 @@ export class ArticlesService {
   }
 
   private generateBarcodeId(tenantId: string): string {
-    const prefix = tenantId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase().padEnd(4, '0');
+    const prefix = tenantId
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .substring(0, 4)
+      .toUpperCase()
+      .padEnd(4, '0');
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
     return `WAPE-${prefix}-${date}-${rand}`;

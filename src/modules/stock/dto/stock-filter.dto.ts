@@ -5,7 +5,8 @@ import { StockMovementType } from '../../../common/enums';
 
 export class StockFilterDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Filter by article ID' })
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   articleId?: string;
 
   @ApiPropertyOptional({ enum: StockMovementType })
@@ -14,18 +15,22 @@ export class StockFilterDto extends PaginationDto {
   movementType?: StockMovementType;
 
   @ApiPropertyOptional({ description: 'Filter by project ID' })
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   projectId?: string;
 
   @ApiPropertyOptional({ description: 'Filter by task ID' })
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   taskId?: string;
 
   @ApiPropertyOptional({ example: '2026-01-01' })
-  @IsOptional() @IsDateString()
+  @IsOptional()
+  @IsDateString()
   dateFrom?: string;
 
   @ApiPropertyOptional({ example: '2026-12-31' })
-  @IsOptional() @IsDateString()
+  @IsOptional()
+  @IsDateString()
   dateTo?: string;
 }

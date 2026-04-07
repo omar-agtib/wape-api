@@ -16,23 +16,35 @@ export class PurchaseOrderLine extends BaseEntity {
 
   @ApiProperty({ example: 200 })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
-    name: 'ordered_quantity', transformer: DecimalTransformer,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'ordered_quantity',
+    transformer: DecimalTransformer,
   })
   orderedQuantity: number;
 
-  @ApiProperty({ example: 0, description: 'Cumulative received quantity across all receptions' })
+  @ApiProperty({
+    example: 0,
+    description: 'Cumulative received quantity across all receptions',
+  })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
-    name: 'received_quantity', default: 0,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'received_quantity',
+    default: 0,
     transformer: DecimalTransformer,
   })
   receivedQuantity: number;
 
-  @ApiProperty({ example: 82.50 })
+  @ApiProperty({ example: 82.5 })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
-    name: 'unit_price', transformer: DecimalTransformer,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'unit_price',
+    transformer: DecimalTransformer,
   })
   unitPrice: number;
 
@@ -40,10 +52,13 @@ export class PurchaseOrderLine extends BaseEntity {
   @Column({ type: 'varchar', length: 3, default: 'MAD' })
   currency: string;
 
-  @ApiProperty({ example: 16500.00, description: 'orderedQuantity × unitPrice' })
+  @ApiProperty({ example: 16500.0, description: 'orderedQuantity × unitPrice' })
   @Column({
-    type: 'decimal', precision: 15, scale: 2,
-    name: 'total_price', transformer: DecimalTransformer,
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    name: 'total_price',
+    transformer: DecimalTransformer,
   })
   totalPrice: number;
 

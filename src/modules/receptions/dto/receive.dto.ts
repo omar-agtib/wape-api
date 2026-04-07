@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class ReceiveDto {
   @ApiProperty({
@@ -10,11 +10,18 @@ export class ReceiveDto {
   @Min(0.01)
   receivedQuantity: number;
 
-  @ApiPropertyOptional({ example: 'Partial delivery — rest expected next week' })
-  @IsOptional() @IsString()
+  @ApiPropertyOptional({
+    example: 'Partial delivery — rest expected next week',
+  })
+  @IsOptional()
+  @IsString()
   notes?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-of-user', description: 'Who received the goods' })
-  @IsOptional() @IsString()
+  @ApiPropertyOptional({
+    example: 'uuid-of-user',
+    description: 'Who received the goods',
+  })
+  @IsOptional()
+  @IsString()
   receivedBy?: string;
 }

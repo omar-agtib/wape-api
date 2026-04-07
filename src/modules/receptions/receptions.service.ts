@@ -1,5 +1,7 @@
 import {
-  Injectable, NotFoundException, UnprocessableEntityException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -10,7 +12,11 @@ import { StockService } from '../stock/stock.service';
 import { PurchaseOrdersService } from '../purchase-orders/purchase-orders.service';
 import { ReceiveDto } from './dto/receive.dto';
 import { ReceptionFilterDto } from './dto/reception-filter.dto';
-import { ReceptionStatus, StockMovementType } from '../../common/enums';
+import {
+  PurchaseOrderStatus,
+  ReceptionStatus,
+  StockMovementType,
+} from '../../common/enums';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -28,7 +34,10 @@ export class ReceptionsService {
   ) {}
 
   // ── W5: Create reception rows when PO is confirmed ───────────────────────────
-  async createFromPo(poId: string, lines: PurchaseOrderLine[]): Promise<Reception[]> {
+  async createFromPo(
+    poId: string,
+    lines: PurchaseOrderLine[],
+  ): Promise<Reception[]> {
     const receptions = lines.map((line) =>
       this.repo.create({
         purchaseOrderId: poId,
@@ -43,7 +52,10 @@ export class ReceptionsService {
   }
 
   // ── List ─────────────────────────────────────────────────────────────────────
-  async findAll(tenantId: string, filters: ReceptionFilterDto): Promise<PaginatedResult<Reception>> {
+  async findAll(
+    tenantId: string,
+    filters: ReceptionFilterDto,
+  ): Promise<PaginatedResult<Reception>> {
     const { page = 1, limit = 20 } = filters;
 
     // Get all PO ids that belong to this tenant first, then filter receptions
@@ -65,7 +77,9 @@ export class ReceptionsService {
       .where('r.purchase_order_id IN (:...poIds)', { poIds });
 
     if (filters.purchaseOrderId) {
-      qb.andWhere('r.purchase_order_id = :poId', { poId: filters.purchaseOrderId });
+      qb.andWhere('r.purchase_order_id = :poId', {
+        poId: filters.purchaseOrderId,
+      });
     }
     if (filters.status) {
       qb.andWhere('r.status = :status', { status: filters.status });
@@ -83,7 +97,12 @@ export class ReceptionsService {
   }
 
   // ── W6: Receive goods ────────────────────────────────────────────────────────
-  async receive(tenantId: string, receptionId: string, dto: ReceiveDto, userId: string): Promise<{
+  async receive(
+    tenantId: string,
+    receptionId: string,
+    dto: ReceiveDto,
+    userId: string,
+  ): Promise<{
     reception: Reception;
     newReception?: Reception;
     poStatus: string;
@@ -98,8 +117,11 @@ export class ReceptionsService {
     }
 
     // RG20 — check PO is not completed
-    const po = await this.poService.findOneRaw(tenantId, reception.purchaseOrderId);
-    if (po.status === 'completed') {
+    const po = await this.poService.findOneRaw(
+      tenantId,
+      reception.purchaseOrderId,
+    );
+    if (po.status === PurchaseOrderStatus.COMPLETED) {
       throw new UnprocessableEntityException({
         error: 'PO_COMPLETED',
         message: 'Cannot add receptions to a completed purchase order (RG20)',
@@ -135,7 +157,9 @@ export class ReceptionsService {
 
       // Update current reception
       reception.receivedQuantity = alreadyReceived + dto.receivedQuantity;
-      reception.status = isFullyReceived ? ReceptionStatus.COMPLETED : ReceptionStatus.PARTIAL;
+      reception.status = isFullyReceived
+        ? ReceptionStatus.COMPLETED
+        : ReceptionStatus.PARTIAL;
       reception.receivedAt = new Date();
       reception.receivedBy = dto.receivedBy ?? userId;
       if (dto.notes) reception.notes = dto.notes;
@@ -143,7 +167,8 @@ export class ReceptionsService {
 
       // If partial, create a new reception row for the remainder
       if (!isFullyReceived) {
-        const remainder = reception.expectedQuantity - reception.receivedQuantity;
+        const remainder =
+          reception.expectedQuantity - reception.receivedQuantity;
         newReception = queryRunner.manager.create(Reception, {
           purchaseOrderId: reception.purchaseOrderId,
           purchaseOrderLineId: reception.purchaseOrderLineId,
@@ -190,7 +215,10 @@ export class ReceptionsService {
 
     // Evaluate and update PO status (completed / partial / confirmed)
     await this.poService.evaluatePoStatus(tenantId, reception.purchaseOrderId);
-    const updatedPo = await this.poService.findOneRaw(tenantId, reception.purchaseOrderId);
+    const updatedPo = await this.poService.findOneRaw(
+      tenantId,
+      reception.purchaseOrderId,
+    );
 
     return {
       reception,
@@ -201,16 +229,27 @@ export class ReceptionsService {
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
-  private async findOneWithTenantCheck(tenantId: string, receptionId: string): Promise<Reception> {
+  private async findOneWithTenantCheck(
+    tenantId: string,
+    receptionId: string,
+  ): Promise<Reception> {
     // Join through purchase_orders to enforce tenant isolation
     const reception = await this.repo
       .createQueryBuilder('r')
-      .innerJoin('purchase_orders', 'po', 'po.id = r.purchase_order_id AND po.tenant_id = :tenantId', { tenantId })
+      .innerJoin(
+        'purchase_orders',
+        'po',
+        'po.id = r.purchase_order_id AND po.tenant_id = :tenantId',
+        { tenantId },
+      )
       .where('r.id = :id', { id: receptionId })
       .getOne();
 
     if (!reception) {
-      throw new NotFoundException({ error: 'RECEPTION_NOT_FOUND', message: `Reception '${receptionId}' not found` });
+      throw new NotFoundException({
+        error: 'RECEPTION_NOT_FOUND',
+        message: `Reception '${receptionId}' not found`,
+      });
     }
     return reception;
   }

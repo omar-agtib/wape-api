@@ -20,21 +20,31 @@ export class Reception extends BaseEntity {
 
   @ApiProperty({ example: 200 })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
-    name: 'expected_quantity', transformer: DecimalTransformer,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'expected_quantity',
+    transformer: DecimalTransformer,
   })
   expectedQuantity: number;
 
   @ApiProperty({ example: 0 })
   @Column({
-    type: 'decimal', precision: 10, scale: 2,
-    name: 'received_quantity', default: 0,
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    name: 'received_quantity',
+    default: 0,
     transformer: DecimalTransformer,
   })
   receivedQuantity: number;
 
   @ApiProperty({ enum: ReceptionStatus })
-  @Column({ type: 'enum', enum: ReceptionStatus, default: ReceptionStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: ReceptionStatus,
+    default: ReceptionStatus.PENDING,
+  })
   status: ReceptionStatus;
 
   @ApiPropertyOptional()
