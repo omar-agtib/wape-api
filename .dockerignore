@@ -1,9 +1,41 @@
+# Dependencies
 node_modules
+
+# Build output
 dist
+build
+
+# Environment files (only real .env, not examples)
 .env
+.env.local
+.env.*.local
+
+# Git
 .git
 .gitignore
-*.md
+
+# Logs & coverage
 logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 coverage
 .nyc_output
+
+# IDE & OS files
+.vscode
+.idea
+.DS_Store
+*.swp
+*.swo
+
+# Documentation (optional but safe)
+README.md
+CHANGELOG.md
+*.md
+
+# Docker files themselves
+Dockerfile
+.dockerignore
+docker-compose*.yml
