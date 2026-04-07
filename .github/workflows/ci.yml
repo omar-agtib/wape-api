@@ -13,7 +13,7 @@ env:
 
 jobs:
   # ── Job 1: Lint + Build ────────────────────────────────────────────────────
-    build:
+  build:
     name: Lint & Build
     runs-on: ubuntu-latest
 
@@ -31,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npm run lint -- --max-warnings=100  # This forces lint to fail on warnings too
+        run: npm run lint -- --max-warnings=100
 
       - name: Build
         run: npm run build
