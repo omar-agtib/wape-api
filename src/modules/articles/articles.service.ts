@@ -14,11 +14,14 @@ import {
   PaginatedResult,
 } from '../../common/dto/pagination.dto';
 
+import { CloudinaryService } from '../../shared/cloudinary/cloudinary.service';
+
 @Injectable()
 export class ArticlesService {
   constructor(
     @InjectRepository(Article)
     private readonly repo: Repository<Article>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(
@@ -31,14 +34,69 @@ export class ArticlesService {
       ...dto,
       tenantId,
       barcodeId,
-      barcodeImageUrl: undefined, // Generated async (BullMQ queue — Sprint 5)
+      barcodeImageUrl: undefined,
       stockQuantity: dto.initialStock ?? 0,
       reservedQuantity: 0,
       consumedQuantity: 0,
     });
 
     const saved = await this.repo.save(article);
+
+    // Generate barcode image async — don't block the response
+    void this.generateAndUploadBarcode(saved, tenantId);
+
     return this.withComputed(saved);
+  }
+
+  private async generateAndUploadBarcode(
+    article: Article,
+    tenantId: string,
+  ): Promise<void> {
+    try {
+      const bwipjs = await import('bwip-js');
+
+      // Generate CODE128 barcode as PNG buffer
+      const pngBuffer: Buffer = await new Promise((resolve, reject) => {
+        bwipjs.toBuffer(
+          {
+            bcid: 'code128',
+            text: article.barcodeId,
+            scale: 3,
+            height: 10,
+            includetext: true,
+            textxalign: 'center',
+          },
+          (err, png) => {
+            if (err)
+              reject(err instanceof Error ? err : new Error(String(err)));
+            else resolve(png);
+          },
+        );
+      });
+
+      // Upload to Cloudinary
+      const result = await this.cloudinaryService.uploadBuffer(
+        pngBuffer,
+        `barcode-${article.id}`,
+        'barcodes',
+        tenantId,
+      );
+
+      // Update article with Cloudinary URL
+      await this.repo.update(article.id, {
+        barcodeImageUrl: result.secureUrl,
+      });
+
+      console.log(
+        `Barcode generated for article ${article.name}: ${result.secureUrl}`,
+      );
+    } catch (err) {
+      console.error(
+        `Barcode generation failed for article ${article.id}:`,
+        err,
+      );
+      // Non-fatal — article is still usable without barcode image
+    }
   }
 
   async findAll(

@@ -54,4 +54,32 @@ export class HealthController {
       uptime: Math.floor(process.uptime()),
     };
   }
+  @Public()
+  @Get('realtime')
+  @ApiOperation({ summary: 'WebSocket connection stats (public)' })
+  realtimeStats() {
+    return {
+      status: 'ok',
+      websocket: 'available',
+      namespace: '/',
+      transports: ['websocket', 'polling'],
+      auth: 'JWT Bearer token required in handshake.auth.token',
+      events: {
+        server_to_client: [
+          'connected',
+          'pong',
+          'finance.updated',
+          'project.progress',
+          'task.status',
+          'invoice.created',
+          'invoice.updated',
+          'nc.reported',
+          'budget.alert',
+          'stock.alert',
+          'notification',
+        ],
+        client_to_server: ['ping', 'subscribe:project', 'unsubscribe:project'],
+      },
+    };
+  }
 }

@@ -14,6 +14,8 @@ import { InvoicesService } from '../invoices/invoices.service';
 import { CreateAttachmentDto } from './dto/create-attachment.dto';
 import { ConfirmAttachmentDto } from './dto/confirm-attachment.dto';
 import { AttachmentFilterDto } from './dto/attachment-filter.dto';
+import { MailService } from '../../shared/mail/mail.service';
+import { ProjectsService } from '../projects/projects.service';
 import {
   AttachmentStatus,
   AttachmentType,
@@ -21,6 +23,7 @@ import {
   TaskStatus,
 } from '../../common/enums';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
+import { RealtimeService } from '../../shared/realtime/realtime.service';
 
 @Injectable()
 export class AttachmentsService {
@@ -35,6 +38,9 @@ export class AttachmentsService {
     private readonly tasksService: TasksService,
     private readonly invoicesService: InvoicesService,
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
+    private readonly projectsService: ProjectsService,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   // ── Create ──────────────────────────────────────────────────────────────────
@@ -194,6 +200,41 @@ export class AttachmentsService {
       }
 
       await queryRunner.commitTransaction();
+      const updatedSnapshot = await this.snapshotRepo.findOne({
+        where: { projectId: attachment.projectId },
+      });
+      if (updatedSnapshot) {
+        const percentConsumed =
+          updatedSnapshot.totalBudget > 0
+            ? Math.round(
+                (updatedSnapshot.totalSpent / updatedSnapshot.totalBudget) *
+                  10000,
+              ) / 100
+            : 0;
+        const alertLevel =
+          percentConsumed >= 100
+            ? 'critical'
+            : percentConsumed >= 80
+              ? 'warning'
+              : 'normal';
+
+        this.realtimeService.emitFinanceUpdated(tenantId, {
+          projectId: attachment.projectId,
+          projectName: attachment.title, // production: fetch project name
+          totalBudget: updatedSnapshot.totalBudget,
+          totalSpent: updatedSnapshot.totalSpent,
+          remainingBudget: updatedSnapshot.remainingBudget,
+          percentConsumed,
+          alertLevel,
+          currency: attachment.currency,
+          breakdown: {
+            personnel: updatedSnapshot.spentPersonnel,
+            articles: updatedSnapshot.spentArticles,
+            tools: updatedSnapshot.spentTools,
+          },
+        });
+      }
+      void this.checkBudgetAlert(tenantId, attachment.projectId, []); // ← async check for budget alert (non-blocking)
 
       // Step 5a — if external: create invoice (outside transaction is fine)
       if (isExternal) {
@@ -204,6 +245,44 @@ export class AttachmentsService {
           projectId: attachment.projectId,
           amount: costs.totalCost,
           currency: attachment.currency,
+        });
+      }
+
+      if (isExternal && invoice) {
+        try {
+          const project = await this.projectsService.findOneRaw(
+            tenantId,
+            attachment.projectId,
+          );
+          const subcontractor = await this.contactsService.findOneRaw(
+            tenantId,
+            attachment.subcontractorId!,
+          );
+          await this.mailService.sendInvoiceCreated(
+            [subcontractor.email].filter(Boolean) as string[],
+            {
+              invoiceNumber: invoice.invoiceNumber,
+              invoiceId: invoice.id,
+              subcontractorName: subcontractor.legalName,
+              projectName: project.name,
+              amount: invoice.amount,
+              currency: invoice.currency,
+              issuedAt: new Date().toLocaleDateString('fr-MA'),
+            },
+          );
+        } catch {
+          /* non-fatal */
+        }
+
+        this.realtimeService.emitInvoiceCreated(tenantId, {
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          projectId: attachment.projectId,
+          projectName: attachment.title,
+          subcontractorName: attachment.subcontractorId ?? '',
+          amount: invoice.amount,
+          currency: invoice.currency,
+          status: invoice.status,
         });
       }
     } catch (err) {
@@ -325,5 +404,35 @@ export class AttachmentsService {
       toolsCost,
       totalCost: personnelCost + articlesCost + toolsCost,
     };
+  }
+
+  private async checkBudgetAlert(
+    tenantId: string,
+    projectId: string,
+    adminEmails: string[],
+  ): Promise<void> {
+    try {
+      const finance = await this.projectsService.getFinance(
+        tenantId,
+        projectId,
+      );
+      if (
+        finance.alertLevel === 'warning' ||
+        finance.alertLevel === 'critical'
+      ) {
+        await this.mailService.sendBudgetAlert(adminEmails, {
+          projectId,
+          projectName: finance.projectName,
+          totalBudget: finance.totalBudget,
+          totalSpent: finance.totalSpent,
+          remainingBudget: finance.remainingBudget,
+          percentConsumed: finance.percentConsumed,
+          currency: finance.currency,
+          alertLevel: finance.alertLevel,
+        });
+      }
+    } catch {
+      /* non-fatal */
+    }
   }
 }

@@ -43,7 +43,8 @@ export class Article extends SoftDeleteEntity {
   barcodeId: string;
 
   @ApiPropertyOptional({
-    description: 'S3 URL for barcode image PNG (generated async in Sprint 5)',
+    description:
+      'URL of the generated barcode image (CODE128) stored in Cloudinary',
   })
   @Column({ type: 'text', name: 'barcode_image_url', nullable: true })
   barcodeImageUrl?: string;

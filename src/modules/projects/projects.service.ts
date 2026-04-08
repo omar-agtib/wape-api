@@ -12,6 +12,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectFilterDto } from './dto/project-filter.dto';
 import { ProjectStatus } from '../../common/enums';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
+import { RealtimeService } from '../../shared/realtime/realtime.service';
 
 @Injectable()
 export class ProjectsService {
@@ -20,6 +21,7 @@ export class ProjectsService {
     private readonly projectRepo: Repository<Project>,
     @InjectRepository(ProjectFinanceSnapshot)
     private readonly snapshotRepo: Repository<ProjectFinanceSnapshot>,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   async create(
@@ -237,6 +239,13 @@ export class ProjectsService {
     await this.projectRepo.update(projectId, {
       status: newStatus,
       progress: Math.round(avgProgress * 100) / 100,
+    });
+    // Emit real-time project progress
+    this.realtimeService.emitProjectProgress(tenantId, {
+      projectId,
+      projectName: project.name,
+      progress: Math.round(avgProgress * 100) / 100,
+      status: newStatus,
     });
   }
 }

@@ -1,0 +1,23 @@
+<h1>✅ Facture validée — {{invoiceNumber}}</h1>
+<p>
+  La facture
+  <strong>{{invoiceNumber}}</strong>
+  a été validée avec succès. Le PDF de la facture est disponible en
+  téléchargement.
+</p>
+
+<div class='table-wrap'>
+  <table>
+    <tr><td>Numéro de facture</td><td><strong
+        >{{invoiceNumber}}</strong></td></tr>
+    <tr><td>Sous-traitant</td><td>{{subcontractorName}}</td></tr>
+    <tr><td>Montant</td><td><strong>{{amount}} {{currency}}</strong></td></tr>
+    <tr><td>Validée le</td><td>{{validatedAt}}</td></tr>
+    <tr><td>Statut</td><td><span
+          class='badge badge-info'
+        >Validée</span></td></tr>
+  </table>
+</div>
+
+<a href='{{frontendUrl}}/invoices/{{invoiceId}}' class='btn'>Télécharger la
+  facture →</a>

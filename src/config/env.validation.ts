@@ -29,4 +29,16 @@ export const envValidationSchema = Joi.object({
   // Throttle
   THROTTLE_TTL: Joi.number().default(60000),
   THROTTLE_LIMIT: Joi.number().default(100),
+
+  // Cloudinary
+  CLOUDINARY_CLOUD_NAME: Joi.string().required(),
+  CLOUDINARY_API_KEY: Joi.string().required(),
+  CLOUDINARY_API_SECRET: Joi.string().required(),
+
+  // Email (SendGrid)
+  SENDGRID_API_KEY: Joi.string().required(),
+  MAIL_FROM_ADDRESS: Joi.string().email().required(),
+  MAIL_FROM_NAME: Joi.string().default('WAPE Platform'),
+  APP_URL: Joi.string().uri().default('http://localhost:3000'),
+  FRONTEND_URL: Joi.string().uri().default('http://localhost:4000'),
 });

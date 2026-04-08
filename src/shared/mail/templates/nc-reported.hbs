@@ -1,0 +1,24 @@
+<h1>🚨 Non-conformité signalée — {{projectName}}</h1>
+<p>
+  Une nouvelle non-conformité a été signalée sur le projet
+  <strong>{{projectName}}</strong>. Une action corrective peut être nécessaire.
+</p>
+
+<div class='table-wrap'>
+  <table>
+    <tr><td>Titre</td><td><strong>{{ncTitle}}</strong></td></tr>
+    <tr><td>Projet</td><td>{{projectName}}</td></tr>
+    <tr><td>Signalé par</td><td>{{reportedBy}}</td></tr>
+    <tr><td>Date</td><td>{{reportedAt}}</td></tr>
+    <tr><td>Statut</td><td><span
+          class='badge badge-danger'
+        >Ouverte</span></td></tr>
+  </table>
+</div>
+
+<div class='highlight'>
+  <p><strong>Description :</strong> {{description}}</p>
+</div>
+
+<a href='{{frontendUrl}}/non-conformities/{{ncId}}' class='btn btn-danger'>Voir
+  la non-conformité →</a>

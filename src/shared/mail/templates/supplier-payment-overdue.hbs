@@ -1,0 +1,26 @@
+<h1>⚠️ Paiement fournisseur en retard</h1>
+<p>
+  Bonjour,<br />
+  le paiement fournisseur suivant est en retard. Veuillez régulariser la
+  situation dès que possible.
+</p>
+
+<div class='table-wrap'>
+  <table>
+    <tr><td>Fournisseur</td><td><strong>{{supplierName}}</strong></td></tr>
+    <tr><td>Numéro de facture</td><td>{{invoiceNumber}}</td></tr>
+    <tr><td>Montant total</td><td>{{amount}} {{currency}}</td></tr>
+    <tr><td>Déjà payé</td><td>{{amountPaid}} {{currency}}</td></tr>
+    <tr><td>Reste à payer</td><td><strong>{{remainingAmount}}
+          {{currency}}</strong></td></tr>
+    <tr><td>Date d'échéance</td><td><strong
+          style='color:#e53e3e;'
+        >{{dueDate}}</strong></td></tr>
+    <tr><td>Statut</td><td><span class='badge badge-danger'>En retard</span></td></tr>
+  </table>
+</div>
+
+<a
+  href='{{frontendUrl}}/finance/supplier-payments'
+  class='btn btn-warning'
+>Régulariser le paiement →</a>

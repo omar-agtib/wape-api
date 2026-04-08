@@ -5,7 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { createWinstonLogger } from './config/logger.config';
-import * as compression from 'compression';
+import compression from 'compression';
+import express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -32,6 +33,9 @@ async function bootstrap() {
   );
 
   app.use(compression());
+
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // ── CORS ───────────────────────────────────────────────────────────────────
   app.enableCors({
@@ -104,6 +108,7 @@ async function bootstrap() {
       .addTag('documents', 'Documents')
       .addTag('gantt', 'Gantt')
       .addTag('formation', 'Formation & Support')
+      .addTag('upload', 'File uploads — Cloudinary')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);

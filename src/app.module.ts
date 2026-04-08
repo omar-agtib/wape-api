@@ -10,6 +10,12 @@ import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
 
+import cloudinaryConfig from './config/cloudinary.config';
+import { CloudinaryModule } from './shared/cloudinary/cloudinary.module';
+import { UploadModule } from './shared/upload/upload.module';
+import { MailModule } from './shared/mail/mail.module';
+import { RealtimeModule } from './shared/realtime/realtime.module';
+
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -73,7 +79,13 @@ import { envValidationSchema } from './config/env.validation';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, jwtConfig, redisConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        jwtConfig,
+        redisConfig,
+        cloudinaryConfig,
+      ],
       envFilePath: '.env',
       validationSchema: envValidationSchema,
       validationOptions: {
@@ -164,6 +176,10 @@ import { envValidationSchema } from './config/env.validation';
     GanttModule,
     FormationModule,
     FinanceModule,
+    CloudinaryModule,
+    UploadModule,
+    MailModule,
+    RealtimeModule,
   ],
 
   providers: [

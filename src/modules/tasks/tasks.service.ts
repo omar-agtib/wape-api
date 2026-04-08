@@ -34,6 +34,8 @@ import {
 } from '../../common/dto/pagination.dto';
 import { MovementDirection } from '../tools/dto/tool-movement.dto';
 import { ToolMovement } from '../tools/tool-movement.entity';
+import { MailService } from '../../shared/mail/mail.service';
+import { RealtimeService } from '../../shared/realtime/realtime.service';
 
 @Injectable()
 export class TasksService {
@@ -54,6 +56,8 @@ export class TasksService {
     private readonly stockService: StockService,
     private readonly projectsService: ProjectsService,
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   // ── CRUD ────────────────────────────────────────────────────────────────────
@@ -164,6 +168,20 @@ export class TasksService {
     const saved = await this.taskRepo.save(task);
 
     await this.triggerWP1(tenantId, task.projectId);
+
+    void this.notifyTaskStatusChanged(tenantId, task, newStatus);
+
+    // Emit real-time task status event
+    this.realtimeService.emitTaskStatus(tenantId, {
+      taskId: saved.id,
+      taskName: saved.name,
+      projectId: saved.projectId,
+      projectName: saved.projectId,
+      newStatus: saved.status,
+      progress: saved.progress,
+      updatedBy: tenantId,
+    });
+
     return saved;
   }
 
@@ -347,6 +365,24 @@ export class TasksService {
         message: `Cannot transition from '${current}' to '${next}'`,
         details: { current, requested: next, allowed: allowed[current] },
       });
+    }
+  }
+
+  private async notifyTaskStatusChanged(
+    tenantId: string,
+    task: Task,
+    newStatus: TaskStatus,
+  ): Promise<void> {
+    try {
+      const project = await this.projectsService.findOneRaw(
+        tenantId,
+        task.projectId,
+      );
+      console.log(
+        `[NOTIFY] Task '${task.name}' → ${newStatus} on project '${project.name}'`,
+      );
+    } catch {
+      /* non-fatal */
     }
   }
 

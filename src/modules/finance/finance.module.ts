@@ -8,6 +8,7 @@ import { Transaction } from './entities/transaction.entity';
 import { FinanceService } from './finance.service';
 import { FinanceController } from './finance.controller';
 import { ContactsModule } from '../contacts/contacts.module';
+import { MailModule } from '../../shared/mail/mail.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ContactsModule } from '../contacts/contacts.module';
     ]),
     ScheduleModule.forRoot(),
     ContactsModule,
+    MailModule,
   ],
   controllers: [FinanceController],
   providers: [FinanceService],

@@ -1,0 +1,23 @@
+<h1>🧾 Nouvelle facture créée — {{invoiceNumber}}</h1>
+<p>
+  Bonjour,<br />
+  une nouvelle facture a été générée pour le projet
+  <strong>{{projectName}}</strong>
+  suite à la confirmation d'un attachement sous-traitant.
+</p>
+
+<div class='table-wrap'>
+  <table>
+    <tr><td>Numéro de facture</td><td><strong
+        >{{invoiceNumber}}</strong></td></tr>
+    <tr><td>Sous-traitant</td><td>{{subcontractorName}}</td></tr>
+    <tr><td>Projet</td><td>{{projectName}}</td></tr>
+    <tr><td>Montant</td><td><strong>{{amount}} {{currency}}</strong></td></tr>
+    <tr><td>Date d'émission</td><td>{{issuedAt}}</td></tr>
+    <tr><td>Statut</td><td><span class='badge badge-warning'>En attente de
+          validation</span></td></tr>
+  </table>
+</div>
+
+<a href='{{frontendUrl}}/invoices/{{invoiceId}}' class='btn'>Valider la facture
+  →</a>

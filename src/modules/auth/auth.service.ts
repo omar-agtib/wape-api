@@ -11,6 +11,7 @@ import { TenantsService } from '../tenants/tenants.service';
 import { LoginDto, RegisterDto, AuthTokensDto } from './dto/auth.dto';
 import type { JwtPayload } from './strategies/jwt.strategy';
 import { UserRole } from '../../common/enums';
+import { MailService } from '../../shared/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly tenantsService: TenantsService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthTokensDto> {
@@ -38,6 +40,12 @@ export class AuthService {
     });
 
     this.logger.log(`New tenant: ${tenant.slug} | admin: ${user.email}`);
+    void this.mailService.sendWelcome(user.email, {
+      fullName: user.fullName,
+      companyName: tenant.name,
+      email: user.email,
+      slug: tenant.slug,
+    });
     return this.generateTokens(user.id, tenant.id, user.role, user.email);
   }
 

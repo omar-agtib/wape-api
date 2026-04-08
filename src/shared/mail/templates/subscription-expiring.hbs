@@ -1,0 +1,28 @@
+<h1>⚠️ Votre abonnement expire dans {{daysLeft}} jour(s)</h1>
+<p>
+  Bonjour
+  <strong>{{companyName}}</strong>,<br />
+  votre abonnement WAPE arrive à échéance le
+  <strong>{{nextBillingDate}}</strong>. Pour éviter toute interruption de
+  service, veuillez renouveler votre abonnement.
+</p>
+
+<div class='table-wrap'>
+  <table>
+    <tr><td>Plan</td><td>{{plan}}</td></tr>
+    <tr><td>Cycle</td><td>{{billingType}}</td></tr>
+    <tr><td>Montant</td><td>{{amount}} {{currency}}</td></tr>
+    <tr><td>Date d'échéance</td><td><strong
+        >{{nextBillingDate}}</strong></td></tr>
+  </table>
+</div>
+
+<a
+  href='{{frontendUrl}}/finance/subscriptions'
+  class='btn btn-warning'
+>Renouveler maintenant →</a>
+
+<p style='font-size: 13px; color: #718096;'>
+  Après expiration, vous disposez d'un délai de grâce de 7 jours avant que
+  l'accès premium soit suspendu.
+</p>

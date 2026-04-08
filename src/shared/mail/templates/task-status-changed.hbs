@@ -1,0 +1,30 @@
+<h1>📋 Tâche mise à jour — {{taskName}}</h1>
+<p>
+  La tâche
+  <strong>{{taskName}}</strong>
+  du projet
+  <strong>{{projectName}}</strong>
+  vient de changer de statut.
+</p>
+
+<div class='table-wrap'>
+  <table>
+    <tr><td>Tâche</td><td><strong>{{taskName}}</strong></td></tr>
+    <tr><td>Projet</td><td>{{projectName}}</td></tr>
+    <tr>
+      <td>Nouveau statut</td>
+      <td>
+        {{#if isCompleted}}<span
+            class='badge badge-success'
+          >Terminée</span>{{/if}}
+        {{#if isOnProgress}}<span class='badge badge-info'>En cours</span>{{/if}}
+        {{#if isPlanned}}<span
+            class='badge badge-warning'
+          >Planifiée</span>{{/if}}
+      </td>
+    </tr>
+    <tr><td>Mis à jour le</td><td>{{updatedAt}}</td></tr>
+  </table>
+</div>
+
+<a href='{{frontendUrl}}/projects/{{projectId}}' class='btn'>Voir le projet →</a>

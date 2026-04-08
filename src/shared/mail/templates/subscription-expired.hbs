@@ -1,0 +1,24 @@
+<h1>🔴 Votre abonnement WAPE a expiré</h1>
+<p>
+  Bonjour
+  <strong>{{companyName}}</strong>,<br />
+  votre abonnement a expiré le
+  <strong>{{expiredDate}}</strong>. Renouvelez maintenant pour continuer à
+  accéder à toutes les fonctionnalités WAPE.
+</p>
+
+<div class='highlight'>
+  <p>
+    ⏰
+    <strong>Délai restant avant suspension :</strong>
+    {{daysUntilRestriction}}
+    jour(s)<br />
+    Après ce délai, l'accès aux fonctionnalités premium sera automatiquement
+    suspendu.
+  </p>
+</div>
+
+<a
+  href='{{frontendUrl}}/finance/subscriptions'
+  class='btn btn-danger'
+>Renouveler l'abonnement →</a>

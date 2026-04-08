@@ -1,0 +1,25 @@
+<h1>✅ Paiement confirmé — Merci !</h1>
+<p>
+  Bonjour
+  <strong>{{companyName}}</strong>,<br />
+  votre paiement a bien été reçu. Votre abonnement WAPE est actif jusqu'au
+  <strong>{{nextBillingDate}}</strong>.
+</p>
+
+<div class='table-wrap'>
+  <table>
+    <tr><td>Numéro de transaction</td><td><code
+        >{{transactionId}}</code></td></tr>
+    <tr><td>Plan</td><td>{{plan}}</td></tr>
+    <tr><td>Montant payé</td><td>{{amount}} {{currency}}</td></tr>
+    <tr><td>Méthode de paiement</td><td>{{paymentMethod}}</td></tr>
+    <tr><td>Date du paiement</td><td>{{paymentDate}}</td></tr>
+    <tr><td>Prochain renouvellement</td><td><strong
+        >{{nextBillingDate}}</strong></td></tr>
+    <tr><td>Statut</td><td><span
+          class='badge badge-success'
+        >Actif</span></td></tr>
+  </table>
+</div>
+
+<a href='{{frontendUrl}}/finance/transactions' class='btn'>Voir mes paiements →</a>

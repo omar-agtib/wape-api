@@ -7,3 +7,5 @@ export const CurrentUser = createParamDecorator(
     return request.user;
   },
 );
+
+//YBQSUE547GXTD5G66GVMG6XQ

@@ -1,0 +1,21 @@
+<h1>💰 Facture payée — {{invoiceNumber}}</h1>
+<p>
+  La facture
+  <strong>{{invoiceNumber}}</strong>
+  a été marquée comme payée.
+</p>
+
+<div class='table-wrap'>
+  <table>
+    <tr><td>Numéro de facture</td><td><strong
+        >{{invoiceNumber}}</strong></td></tr>
+    <tr><td>Sous-traitant</td><td>{{subcontractorName}}</td></tr>
+    <tr><td>Montant</td><td><strong>{{amount}} {{currency}}</strong></td></tr>
+    <tr><td>Payée le</td><td>{{paidAt}}</td></tr>
+    <tr><td>Statut</td><td><span
+          class='badge badge-success'
+        >Payée</span></td></tr>
+  </table>
+</div>
+
+<a href='{{frontendUrl}}/invoices/{{invoiceId}}' class='btn'>Voir la facture →</a>

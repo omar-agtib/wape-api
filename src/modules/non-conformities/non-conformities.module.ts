@@ -4,9 +4,10 @@ import { NonConformity } from './non-conformity.entity';
 import { NcImage } from './nc-image.entity';
 import { NonConformitiesService } from './non-conformities.service';
 import { NonConformitiesController } from './non-conformities.controller';
+import { RealtimeModule } from '../../shared/realtime/realtime.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([NonConformity, NcImage])],
+  imports: [TypeOrmModule.forFeature([NonConformity, NcImage]), RealtimeModule],
   controllers: [NonConformitiesController],
   providers: [NonConformitiesService],
   exports: [NonConformitiesService],

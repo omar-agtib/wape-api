@@ -1,0 +1,34 @@
+<h1>
+  {{#if isCritical}}🔴{{/if}}
+  {{#if isWarning}}🟠{{/if}}
+  Alerte budgétaire —
+  {{projectName}}
+</h1>
+<p>
+  Le projet
+  <strong>{{projectName}}</strong>
+  a atteint
+  <strong>{{percentConsumed}}%</strong>
+  de son budget total.
+</p>
+
+<div class='table-wrap'>
+  <table>
+    <tr><td>Projet</td><td><strong>{{projectName}}</strong></td></tr>
+    <tr><td>Budget total</td><td>{{totalBudget}} {{currency}}</td></tr>
+    <tr><td>Dépensé</td><td>{{totalSpent}} {{currency}}</td></tr>
+    <tr><td>Restant</td><td>{{remainingBudget}} {{currency}}</td></tr>
+    <tr>
+      <td>Consommation</td>
+      <td>
+        {{#if isCritical}}<span class='badge badge-danger'>{{percentConsumed}}%
+            — Dépassement</span>{{/if}}
+        {{#if isWarning}}<span class='badge badge-warning'>{{percentConsumed}}%
+            — Attention</span>{{/if}}
+      </td>
+    </tr>
+  </table>
+</div>
+
+<a href='{{frontendUrl}}/projects/{{projectId}}/finance' class='btn'>Voir le
+  tableau de bord financier →</a>

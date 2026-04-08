@@ -21,6 +21,7 @@ import { CreateSubcontractorPaymentDto } from './dto/create-subcontractor-paymen
 import { PaySubcontractorDto } from './dto/pay-subcontractor.dto';
 import { TransactionFilterDto } from './dto/transaction-filter.dto';
 import { ValidateTransactionDto } from './dto/validate-transaction.dto';
+import { MailService } from '../../shared/mail/mail.service';
 import {
   BillingType,
   ContactType,
@@ -52,6 +53,7 @@ export class FinanceService {
     @InjectRepository(Transaction)
     private readonly txRepo: Repository<Transaction>,
     private readonly contactsService: ContactsService,
+    private readonly mailService: MailService,
   ) {}
 
   // ── Subscriptions ──────────────────────────────────────────────────────────
@@ -140,6 +142,23 @@ export class FinanceService {
     });
 
     const updated = await this.getSubscription(tenantId);
+
+    void this.mailService.sendPaymentConfirmed(
+      // In production: look up tenant admin email from users table
+      // For now: log it
+      'admin@tenant.ma',
+      {
+        companyName: subscription.companyName,
+        transactionId: gatewayTransactionId,
+        plan: subscription.plan,
+        amount: subscription.price,
+        currency: subscription.currency,
+        paymentMethod: subscription.paymentMethod,
+        paymentDate: new Date().toLocaleDateString('fr-MA'),
+        nextBillingDate: updated.nextBillingDate,
+      },
+    );
+
     this.logger.log(
       `Subscription payment confirmed for tenant ${tenantId} — ${tx.transactionId}`,
     );
@@ -680,6 +699,16 @@ export class FinanceService {
       );
     }
 
+    const expiredSubs = await this.subRepo.find({
+      where: { status: SubscriptionStatus.EXPIRED },
+    });
+    for (const sub of expiredSubs) {
+      // In production: fetch admin email from users table by tenantId
+      this.logger.warn(
+        `[W14] Would send expiry email for tenant: ${sub.tenantId}`,
+      );
+    }
+
     // 2. Restrict access after 7 days past expiry
     const restricted = await this.subRepo
       .createQueryBuilder()
@@ -696,6 +725,15 @@ export class FinanceService {
       );
     }
 
+    const restrictedSubs = await this.subRepo.find({
+      where: { status: SubscriptionStatus.EXPIRED, accessRestricted: true },
+    });
+    for (const sub of restrictedSubs) {
+      void this.mailService.sendAccessRestricted('admin@tenant.ma', {
+        companyName: sub.companyName,
+      });
+    }
+
     // 3. Mark supplier payments as overdue
     const overdue = await this.spRepo
       .createQueryBuilder()
@@ -708,6 +746,15 @@ export class FinanceService {
     if (overdue.affected && overdue.affected > 0) {
       this.logger.warn(
         `[W14] ${overdue.affected} supplier payment(s) marked as overdue`,
+      );
+    }
+
+    const overduePayments = await this.spRepo.find({
+      where: { status: PaymentStatus.OVERDUE },
+    });
+    for (const payment of overduePayments) {
+      this.logger.warn(
+        `[W14] Overdue supplier payment: ${payment.invoiceNumber} — ${payment.remainingAmount} ${payment.currency}`,
       );
     }
 

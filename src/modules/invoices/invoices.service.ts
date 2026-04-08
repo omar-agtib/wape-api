@@ -9,6 +9,9 @@ import { Invoice } from './invoice.entity';
 import { InvoiceFilterDto } from './dto/invoice-filter.dto';
 import { InvoiceStatus } from '../../common/enums';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
+import { MailService } from '../../shared/mail/mail.service';
+import { ContactsService } from '../contacts/contacts.service';
+import { RealtimeService } from '../../shared/realtime/realtime.service';
 
 export interface CreateInvoiceInput {
   tenantId: string;
@@ -31,6 +34,9 @@ export class InvoicesService {
   constructor(
     @InjectRepository(Invoice)
     private readonly repo: Repository<Invoice>,
+    private readonly mailService: MailService,
+    private readonly contactsService: ContactsService,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   // ── Called by W7 ────────────────────────────────────────────────────────────
@@ -100,12 +106,20 @@ export class InvoicesService {
     await this.repo.update(id, {
       status: InvoiceStatus.VALIDATED,
       validatedAt: new Date(),
-      // pdfUrl → populated asynchronously in Sprint 5 (BullMQ PDF generation)
-      // For now: stub with a placeholder
       pdfUrl: `pending-generation/INV-${invoice.invoiceNumber}.pdf`,
     });
 
-    return this.findOne(tenantId, id);
+    this.realtimeService.emitInvoiceUpdated(tenantId, {
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      status: 'validated',
+      updatedAt: new Date().toISOString(),
+    });
+
+    const updatedInvoice = await this.findOne(tenantId, id); // ← ADD
+    void this.notifyInvoiceValidated(tenantId, updatedInvoice);
+
+    return updatedInvoice;
   }
 
   // ── Mark paid ───────────────────────────────────────────────────────────────
@@ -119,7 +133,17 @@ export class InvoicesService {
       paidAt: new Date(),
     });
 
-    return this.findOne(tenantId, id);
+    this.realtimeService.emitInvoiceUpdated(tenantId, {
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      status: 'paid',
+      updatedAt: new Date().toISOString(),
+    });
+
+    const updatedInvoice = await this.findOne(tenantId, id); // ← ADD
+    void this.notifyInvoicePaid(tenantId, updatedInvoice);
+
+    return updatedInvoice;
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
@@ -148,5 +172,53 @@ export class InvoicesService {
 
     const seq = String(count + 1).padStart(4, '0');
     return `INV-${year}-${seq}`;
+  }
+
+  private async notifyInvoiceValidated(
+    tenantId: string,
+    invoice: Invoice,
+  ): Promise<void> {
+    try {
+      const subcontractor = await this.contactsService.findOneRaw(
+        tenantId,
+        invoice.subcontractorId,
+      );
+      if (subcontractor.email) {
+        await this.mailService.sendInvoiceValidated(subcontractor.email, {
+          invoiceNumber: invoice.invoiceNumber,
+          invoiceId: invoice.id,
+          subcontractorName: subcontractor.legalName,
+          amount: invoice.amount,
+          currency: invoice.currency,
+          validatedAt: invoice.validatedAt?.toLocaleDateString('fr-MA') ?? '',
+        });
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  private async notifyInvoicePaid(
+    tenantId: string,
+    invoice: Invoice,
+  ): Promise<void> {
+    try {
+      const subcontractor = await this.contactsService.findOneRaw(
+        tenantId,
+        invoice.subcontractorId,
+      );
+      if (subcontractor.email) {
+        await this.mailService.sendInvoicePaid(subcontractor.email, {
+          invoiceNumber: invoice.invoiceNumber,
+          invoiceId: invoice.id,
+          subcontractorName: subcontractor.legalName,
+          amount: invoice.amount,
+          currency: invoice.currency,
+          paidAt: invoice.paidAt?.toLocaleDateString('fr-MA') ?? '',
+        });
+      }
+    } catch {
+      // Non-fatal
+    }
   }
 }

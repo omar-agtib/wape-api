@@ -15,6 +15,8 @@ import { UploadPlanDto } from './dto/upload-plan.dto';
 import { UpdateNcStatusDto } from './dto/update-nc-status.dto';
 import { NcStatus } from '../../common/enums';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
+import { MailService } from '../../shared/mail/mail.service';
+import { RealtimeService } from '../../shared/realtime/realtime.service';
 
 const ALLOWED_NC_TRANSITIONS: Record<NcStatus, NcStatus[]> = {
   [NcStatus.OPEN]: [NcStatus.IN_REVIEW, NcStatus.CLOSED],
@@ -29,6 +31,8 @@ export class NonConformitiesService {
     private readonly ncRepo: Repository<NonConformity>,
     @InjectRepository(NcImage)
     private readonly imageRepo: Repository<NcImage>,
+    private readonly mailService: MailService,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   // ── CRUD ────────────────────────────────────────────────────────────────────
@@ -44,7 +48,27 @@ export class NonConformitiesService {
       reportedBy: userId,
       status: NcStatus.OPEN,
     });
-    return this.ncRepo.save(nc);
+    const saved = await this.ncRepo.save(nc);
+
+    this.realtimeService.emitNcReported(tenantId, {
+      ncId: saved.id,
+      ncTitle: saved.title,
+      projectId: saved.projectId,
+      projectName: saved.projectId, // production: fetch project name
+      reportedBy: userId,
+      status: saved.status,
+    });
+
+    void this.mailService.sendNcReported([], {
+      ncId: saved.id,
+      ncTitle: saved.title,
+      projectName: dto.projectId,
+      description: saved.description,
+      reportedBy: userId,
+      reportedAt: new Date().toLocaleDateString('fr-MA'),
+    });
+
+    return saved;
   }
 
   async findAll(
