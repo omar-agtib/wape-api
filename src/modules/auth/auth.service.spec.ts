@@ -24,7 +24,7 @@ describe('AuthService', () => {
     isActive: true,
   };
 
-  const mockUser: Partial<User> = {
+  const mockUserBase: Partial<User> = {
     id: 'user-uuid',
     tenantId: 'tenant-uuid',
     email: 'admin@acme.ma',
@@ -32,7 +32,6 @@ describe('AuthService', () => {
     role: UserRole.ADMIN,
     isActive: true,
     passwordHash: '$2b$12$hashed',
-    validatePassword: jest.fn().mockResolvedValue(true),
   };
 
   beforeEach(async () => {
@@ -75,6 +74,9 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     usersService = module.get(UsersService);
     tenantsService = module.get(TenantsService);
+
+    // Reset all mocks before each test
+    jest.clearAllMocks();
   });
 
   // ── register ────────────────────────────────────────────────────────────────
@@ -82,7 +84,7 @@ describe('AuthService', () => {
   describe('register', () => {
     it('creates tenant + admin user and returns tokens', async () => {
       tenantsService.create.mockResolvedValue(mockTenant as Tenant);
-      usersService.create.mockResolvedValue(mockUser as User);
+      usersService.create.mockResolvedValue(mockUserBase as User);
 
       const result = await service.register({
         companyName: 'ACME Construction',
@@ -96,12 +98,14 @@ describe('AuthService', () => {
         name: 'ACME Construction',
         slug: 'acme',
       });
+
       expect(usersService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           role: UserRole.ADMIN,
           email: 'admin@acme.ma',
         }),
       );
+
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
       expect(result.role).toBe(UserRole.ADMIN);
@@ -130,8 +134,14 @@ describe('AuthService', () => {
   describe('login', () => {
     it('returns tokens for valid credentials', async () => {
       tenantsService.findBySlug.mockResolvedValue(mockTenant as Tenant);
-      usersService.findByEmailAndTenant.mockResolvedValue(mockUser as User);
-      (mockUser.validatePassword as jest.Mock).mockResolvedValue(true);
+
+      const mockValidatePassword = jest.fn().mockResolvedValue(true);
+      const mockUser = {
+        ...mockUserBase,
+        validatePassword: mockValidatePassword,
+      } as User;
+
+      usersService.findByEmailAndTenant.mockResolvedValue(mockUser);
 
       const result = await service.login({
         slug: 'acme',
@@ -139,8 +149,14 @@ describe('AuthService', () => {
         password: 'Wape@2026!',
       });
 
+      expect(tenantsService.findBySlug).toHaveBeenCalledWith('acme');
+      expect(usersService.findByEmailAndTenant).toHaveBeenCalledWith(
+        'admin@acme.ma',
+        'tenant-uuid', // adjust the second argument if your service uses different params
+      );
       expect(result.accessToken).toBe('mock-jwt-token');
       expect(result.userId).toBe('user-uuid');
+      expect(mockValidatePassword).toHaveBeenCalledWith('Wape@2026!');
     });
 
     it('throws UnauthorizedException for unknown slug', async () => {
@@ -153,10 +169,14 @@ describe('AuthService', () => {
 
     it('throws UnauthorizedException for wrong password', async () => {
       tenantsService.findBySlug.mockResolvedValue(mockTenant as Tenant);
-      usersService.findByEmailAndTenant.mockResolvedValue({
-        ...mockUser,
-        validatePassword: jest.fn().mockResolvedValue(false),
-      } as User);
+
+      const mockValidatePassword = jest.fn().mockResolvedValue(false);
+      const mockUser = {
+        ...mockUserBase,
+        validatePassword: mockValidatePassword,
+      } as User;
+
+      usersService.findByEmailAndTenant.mockResolvedValue(mockUser);
 
       await expect(
         service.login({
@@ -165,6 +185,8 @@ describe('AuthService', () => {
           password: 'wrong',
         }),
       ).rejects.toThrow(UnauthorizedException);
+
+      expect(mockValidatePassword).toHaveBeenCalledWith('wrong');
     });
 
     it('throws UnauthorizedException for unknown email', async () => {
