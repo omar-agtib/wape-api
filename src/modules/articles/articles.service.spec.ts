@@ -3,12 +3,23 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   NotFoundException,
   UnprocessableEntityException,
+  HttpException,
 } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { Article } from './article.entity';
 import { createMockRepository } from '../../test/helpers/mock-repository';
 import { createMockCloudinaryService } from '../../test/helpers/mock-services';
 import { CloudinaryService } from '../../shared/cloudinary/cloudinary.service';
+
+jest.mock('bwip-js', () => ({
+  toBuffer: (_opts: any, cb: (err: null, buf: Buffer) => void) =>
+    cb(null, Buffer.from('fake-png')),
+}));
+
+type ErrorResponse = {
+  error: string;
+  details?: Record<string, any>;
+};
 
 describe('ArticlesService', () => {
   let service: ArticlesService;
@@ -70,9 +81,10 @@ describe('ArticlesService', () => {
 
   describe('barcodeId generation', () => {
     it('generates barcodeId in WAPE-XXXX-YYYYMMDD-XXXXXX format', async () => {
-      articleRepo.create!.mockReturnValue({ ...mockArticle, barcodeId: '' });
+      // Use passthrough mock so the generated barcodeId is preserved
+      articleRepo.create!.mockImplementation((data: unknown) => data);
       articleRepo.save!.mockImplementation((entity: any) =>
-        Promise.resolve(entity),
+        Promise.resolve({ ...entity, id: 'article-uuid' }),
       );
 
       const result = await service.create(tenantId, {
@@ -86,9 +98,9 @@ describe('ArticlesService', () => {
     });
 
     it('generates unique barcodeIds for different articles', async () => {
-      articleRepo.create!.mockImplementation((data: any) => data);
+      articleRepo.create!.mockImplementation((data: unknown) => data);
       articleRepo.save!.mockImplementation((entity: any) =>
-        Promise.resolve({ ...entity, id: 'new-id' }),
+        Promise.resolve({ ...entity, id: `art-${Math.random()}` }),
       );
 
       const dto = {
@@ -101,6 +113,8 @@ describe('ArticlesService', () => {
       const r2 = await service.create(tenantId, dto);
 
       expect(r1.barcodeId).not.toBe(r2.barcodeId);
+      expect(r1.barcodeId).toMatch(/^WAPE-[A-Z0-9]{4}-\d{8}-[A-Z0-9]{6}$/);
+      expect(r2.barcodeId).toMatch(/^WAPE-[A-Z0-9]{4}-\d{8}-[A-Z0-9]{6}$/);
     });
   });
 
@@ -130,9 +144,10 @@ describe('ArticlesService', () => {
       try {
         await service.reserveStock('article-uuid', 500);
       } catch (e: any) {
-        expect(e.response.error).toBe('INSUFFICIENT_STOCK');
-        expect(e.response.details).toHaveProperty('available', 400);
-        expect(e.response.details).toHaveProperty('required', 500);
+        const response = (e as HttpException).getResponse() as ErrorResponse;
+        expect(response.error).toBe('INSUFFICIENT_STOCK');
+        expect(response.details).toHaveProperty('available', 400);
+        expect(response.details).toHaveProperty('required', 500);
       }
     });
   });
@@ -166,7 +181,8 @@ describe('ArticlesService', () => {
       try {
         await service.consumeStock('article-uuid', 50);
       } catch (e: any) {
-        expect(e.response.error).toBe('STOCK_CANNOT_BE_NEGATIVE');
+        const response = (e as HttpException).getResponse() as ErrorResponse;
+        expect(response.error).toBe('STOCK_CANNOT_BE_NEGATIVE');
       }
     });
   });

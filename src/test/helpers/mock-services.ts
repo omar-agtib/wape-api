@@ -29,9 +29,13 @@ export const createMockRealtimeService = () => ({
 });
 
 export const createMockCloudinaryService = () => ({
-  uploadFile: jest.fn(),
-  uploadBuffer: jest.fn(),
-  deleteFile: jest.fn(),
+  uploadFile: jest.fn().mockResolvedValue({
+    secureUrl: 'https://mock.cloudinary.com/file.png',
+  }),
+  uploadBuffer: jest.fn().mockResolvedValue({
+    secureUrl: 'https://mock.cloudinary.com/barcode.png',
+  }),
+  deleteFile: jest.fn().mockResolvedValue(undefined),
 });
 
 export const createMockQueryRunner = () => ({

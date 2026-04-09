@@ -89,6 +89,7 @@ export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 export enum BillingType {
   MONTHLY = 'monthly',
   ANNUALLY = 'annually',
+  YEARLY = 'yearly',
 }
 
 export enum SubscriptionPlan {

@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   NotFoundException,
   UnprocessableEntityException,
+  HttpException,
 } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
 import { Invoice } from './invoice.entity';
@@ -15,6 +16,15 @@ import {
 import { MailService } from '../../shared/mail/mail.service';
 import { RealtimeService } from '../../shared/realtime/realtime.service';
 import { ContactsService } from '../contacts/contacts.service';
+
+type InvoiceErrorResponse = {
+  error: string;
+  details: {
+    current: InvoiceStatus;
+    requested: InvoiceStatus;
+    [key: string]: any; // optional for any extra fields
+  };
+};
 
 describe('InvoicesService', () => {
   let service: InvoicesService;
@@ -94,7 +104,7 @@ describe('InvoicesService', () => {
         andWhere: jest.fn().mockReturnThis(),
         getCount: jest.fn().mockResolvedValueOnce(0).mockResolvedValueOnce(1),
       });
-      invoiceRepo.create!.mockImplementation((data: any) => data);
+      invoiceRepo.create!.mockImplementation((data: unknown) => data);
       invoiceRepo.save!.mockImplementation((entity: any) =>
         Promise.resolve(entity),
       );
@@ -153,9 +163,12 @@ describe('InvoicesService', () => {
       try {
         await service.validate(tenantId, 'invoice-uuid');
       } catch (e: any) {
-        expect(e.response.error).toBe('INVOICE_STATUS_REGRESSION');
-        expect(e.response.details.current).toBe(InvoiceStatus.PAID);
-        expect(e.response.details.requested).toBe(InvoiceStatus.VALIDATED);
+        const response = (
+          e as HttpException
+        ).getResponse() as InvoiceErrorResponse;
+        expect(response.error).toBe('INVOICE_STATUS_REGRESSION');
+        expect(response.details.current).toBe(InvoiceStatus.PAID);
+        expect(response.details.requested).toBe(InvoiceStatus.VALIDATED);
       }
     });
 

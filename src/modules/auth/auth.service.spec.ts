@@ -8,6 +8,8 @@ import { TenantsService } from '../tenants/tenants.service';
 import { MailService } from '../../shared/mail/mail.service';
 import { UserRole } from '../../common/enums';
 import { createMockMailService } from '../../test/helpers/mock-services';
+import { Tenant } from '../tenants/tenant.entity';
+import { User } from '../users/user.entity';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -15,7 +17,7 @@ describe('AuthService', () => {
   let tenantsService: jest.Mocked<TenantsService>;
   let jwtService: jest.Mocked<JwtService>;
 
-  const mockTenant = {
+  const mockTenant: Partial<Tenant> = {
     id: 'tenant-uuid',
     name: 'ACME Construction',
     slug: 'acme',
@@ -23,7 +25,7 @@ describe('AuthService', () => {
     isActive: true,
   };
 
-  const mockUser = {
+  const mockUser: Partial<User> = {
     id: 'user-uuid',
     tenantId: 'tenant-uuid',
     email: 'admin@acme.ma',
@@ -81,8 +83,8 @@ describe('AuthService', () => {
 
   describe('register', () => {
     it('creates tenant + admin user and returns tokens', async () => {
-      tenantsService.create.mockResolvedValue(mockTenant as any);
-      usersService.create.mockResolvedValue(mockUser as any);
+      tenantsService.create.mockResolvedValue(mockTenant as Tenant);
+      usersService.create.mockResolvedValue(mockUser as User);
 
       const result = await service.register({
         companyName: 'ACME Construction',
@@ -129,8 +131,8 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('returns tokens for valid credentials', async () => {
-      tenantsService.findBySlug.mockResolvedValue(mockTenant as any);
-      usersService.findByEmailAndTenant.mockResolvedValue(mockUser as any);
+      tenantsService.findBySlug.mockResolvedValue(mockTenant as Tenant);
+      usersService.findByEmailAndTenant.mockResolvedValue(mockUser as User);
       (mockUser.validatePassword as jest.Mock).mockResolvedValue(true);
 
       const result = await service.login({
@@ -152,11 +154,11 @@ describe('AuthService', () => {
     });
 
     it('throws UnauthorizedException for wrong password', async () => {
-      tenantsService.findBySlug.mockResolvedValue(mockTenant as any);
+      tenantsService.findBySlug.mockResolvedValue(mockTenant as Tenant);
       usersService.findByEmailAndTenant.mockResolvedValue({
         ...mockUser,
         validatePassword: jest.fn().mockResolvedValue(false),
-      } as any);
+      } as User);
 
       await expect(
         service.login({
@@ -168,7 +170,7 @@ describe('AuthService', () => {
     });
 
     it('throws UnauthorizedException for unknown email', async () => {
-      tenantsService.findBySlug.mockResolvedValue(mockTenant as any);
+      tenantsService.findBySlug.mockResolvedValue(mockTenant as Tenant);
       usersService.findByEmailAndTenant.mockResolvedValue(null);
 
       await expect(
@@ -184,7 +186,7 @@ describe('AuthService', () => {
       tenantsService.findBySlug.mockResolvedValue({
         ...mockTenant,
         isActive: false,
-      } as any);
+      } as Tenant);
 
       await expect(
         service.login({

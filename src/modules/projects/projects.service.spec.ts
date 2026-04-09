@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   NotFoundException,
   UnprocessableEntityException,
+  HttpException,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { Project } from './project.entity';
@@ -11,6 +12,12 @@ import { ProjectStatus } from '../../common/enums';
 import { createMockRepository } from '../../test/helpers/mock-repository';
 import { createMockRealtimeService } from '../../test/helpers/mock-services';
 import { RealtimeService } from '../../shared/realtime/realtime.service';
+
+type FieldErrorResponse = {
+  error: string;
+  field: string;
+  [key: string]: any; // optional extra fields
+};
 
 describe('ProjectsService', () => {
   let service: ProjectsService;
@@ -114,8 +121,12 @@ describe('ProjectsService', () => {
           endDate: '2026-01-01',
         });
       } catch (e: any) {
-        expect(e.response.error).toBe('INVALID_DATE_RANGE');
-        expect(e.response.field).toBe('endDate');
+        const response = (
+          e as HttpException
+        ).getResponse() as FieldErrorResponse;
+
+        expect(response.error).toBe('INVALID_DATE_RANGE');
+        expect(response.field).toBe('endDate');
       }
     });
   });
@@ -150,7 +161,10 @@ describe('ProjectsService', () => {
       try {
         await service.findOne(tenantId, 'unknown-id');
       } catch (e: any) {
-        expect(e.response.error).toBe('PROJECT_NOT_FOUND');
+        const response = (e as HttpException).getResponse() as {
+          error: string;
+        };
+        expect(response.error).toBe('PROJECT_NOT_FOUND');
       }
     });
   });

@@ -26,6 +26,11 @@ import {
 import { RealtimeService } from '../../shared/realtime/realtime.service';
 import { MailService } from '../../shared/mail/mail.service';
 
+type TaskErrorResponse =
+  | { error: 'INVALID_STATUS_TRANSITION'; details?: Record<string, any> }
+  | { error: 'INSUFFICIENT_STOCK'; details: { insufficientArticles: any[] } }
+  | { error: 'RG01'; details?: Record<string, any> };
+
 describe('TasksService', () => {
   let service: TasksService;
   let taskRepo: ReturnType<typeof createMockRepository>;
@@ -33,10 +38,7 @@ describe('TasksService', () => {
   let taRepo: ReturnType<typeof createMockRepository>;
   let ttRepo: ReturnType<typeof createMockRepository>;
   let articleRepo: ReturnType<typeof createMockRepository>;
-  let toolRepo: ReturnType<typeof createMockRepository>;
-  let mockDataSource: any;
   let mockQueryRunner: ReturnType<typeof createMockQueryRunner>;
-
   const tenantId = 'tenant-uuid';
 
   const mockTask = {
@@ -61,23 +63,29 @@ describe('TasksService', () => {
     currency: 'MAD',
   };
 
-  const mockTool = {
-    id: 'tool-uuid',
-    name: 'Grue Liebherr',
-    status: 'available',
-  };
-
   beforeEach(async () => {
     taskRepo = createMockRepository();
     tpRepo = createMockRepository();
     taRepo = createMockRepository();
     ttRepo = createMockRepository();
     articleRepo = createMockRepository();
-    toolRepo = createMockRepository();
     mockQueryRunner = createMockQueryRunner();
+    mockQueryRunner.manager.save.mockResolvedValue({});
+    mockQueryRunner.manager.update.mockResolvedValue(undefined);
+    mockQueryRunner.manager.increment.mockResolvedValue(undefined);
+    mockQueryRunner.manager.findOne.mockResolvedValue(undefined);
 
-    mockDataSource = {
+    const mockDataSource = {
       createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
+    };
+
+    const mockProjectsService: Partial<ProjectsService> = {
+      findOneRaw: jest.fn().mockResolvedValue({
+        id: 'project-uuid',
+        name: 'Test Project',
+        tenantId,
+      }),
+      recalculateFromTasks: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -92,40 +100,30 @@ describe('TasksService', () => {
           useValue: createMockRepository(),
         },
         { provide: getRepositoryToken(Article), useValue: articleRepo },
-        { provide: getRepositoryToken(Tool), useValue: toolRepo },
+        { provide: getRepositoryToken(Tool), useValue: createMockRepository() },
         {
           provide: ArticlesService,
           useValue: {
             findOneRaw: jest.fn().mockResolvedValue(mockArticle),
-            reserveStock: jest.fn(),
-            consumeStock: jest.fn(),
+            reserveStock: jest.fn().mockResolvedValue(undefined),
+            consumeStock: jest.fn().mockResolvedValue(undefined),
           },
         },
         {
           provide: ToolsService,
           useValue: {
-            findOneRaw: jest.fn().mockResolvedValue(mockTool),
-            autoOut: jest.fn(),
-            autoIn: jest.fn(),
+            findOneRaw: jest
+              .fn()
+              .mockResolvedValue({ id: 'tool-uuid', status: 'available' }),
+            autoOut: jest.fn().mockResolvedValue(undefined),
+            autoIn: jest.fn().mockResolvedValue(undefined),
           },
         },
         {
           provide: StockService,
           useValue: { createMovement: jest.fn().mockResolvedValue({}) },
         },
-        {
-          provide: ProjectsService,
-          useValue: {
-            findOneRaw: jest
-              .fn()
-              .mockResolvedValue({
-                id: 'project-uuid',
-                name: 'Test Project',
-                tenantId,
-              }),
-            recalculateFromTasks: jest.fn(),
-          },
-        },
+        { provide: ProjectsService, useValue: mockProjectsService },
         { provide: getDataSourceToken(), useValue: mockDataSource },
         { provide: RealtimeService, useValue: createMockRealtimeService() },
         { provide: MailService, useValue: createMockMailService() },
@@ -187,18 +185,40 @@ describe('TasksService', () => {
   // ── changeStatus ────────────────────────────────────────────────────────────
 
   describe('changeStatus', () => {
+    // Helper: sets up all mocks needed for a status transition
+    function setupMocksForTransition(
+      currentStatus: TaskStatus,
+      articleQuantity = 50,
+      articleStock = 500,
+      articleReserved = 0,
+    ) {
+      const task = { ...mockTask, status: currentStatus };
+      taskRepo.findOne!.mockResolvedValue(task);
+      taRepo.find!.mockResolvedValue(
+        articleQuantity > 0
+          ? [
+              {
+                taskId: 'task-uuid',
+                articleId: 'article-uuid',
+                quantity: articleQuantity,
+              },
+            ]
+          : [],
+      );
+      ttRepo.find!.mockResolvedValue([]);
+      articleRepo.findOne!.mockResolvedValue({
+        ...mockArticle,
+        stockQuantity: articleStock,
+        reservedQuantity: articleReserved,
+        consumedQuantity: 0,
+      });
+    }
+
     it('validates planned → on_progress transition is allowed', async () => {
       const onProgressTask = { ...mockTask, status: TaskStatus.ON_PROGRESS };
-      taskRepo.findOne!.mockResolvedValue(mockTask);
-      taRepo.find!.mockResolvedValue([]);
-      ttRepo.find!.mockResolvedValue([]);
+      setupMocksForTransition(TaskStatus.PLANNED);
       taskRepo.save!.mockResolvedValue(onProgressTask);
       taskRepo.find!.mockResolvedValue([onProgressTask]);
-
-      // Mock queryRunner manager methods
-      mockQueryRunner.manager.increment.mockResolvedValue(undefined);
-      mockQueryRunner.manager.update.mockResolvedValue(undefined);
-      mockQueryRunner.manager.save.mockResolvedValue({});
 
       const result = await service.changeStatus(
         tenantId,
@@ -213,6 +233,8 @@ describe('TasksService', () => {
         ...mockTask,
         status: TaskStatus.COMPLETED,
       });
+      taRepo.find!.mockResolvedValue([]);
+      ttRepo.find!.mockResolvedValue([]);
 
       await expect(
         service.changeStatus(tenantId, 'task-uuid', TaskStatus.PLANNED),
@@ -220,11 +242,22 @@ describe('TasksService', () => {
     });
 
     it('throws INVALID_STATUS_TRANSITION for planned → completed (skipping on_progress)', async () => {
-      taskRepo.findOne!.mockResolvedValue(mockTask); // status = planned
+      taskRepo.findOne!.mockResolvedValue({
+        ...mockTask,
+        status: TaskStatus.PLANNED,
+      });
+      taRepo.find!.mockResolvedValue([]);
+      ttRepo.find!.mockResolvedValue([]);
 
-      await expect(
-        service.changeStatus(tenantId, 'task-uuid', TaskStatus.COMPLETED),
-      ).rejects.toThrow(UnprocessableEntityException);
+      let caughtError: UnprocessableEntityException | undefined;
+      try {
+        await service.changeStatus(tenantId, 'task-uuid', TaskStatus.COMPLETED);
+      } catch (e) {
+        caughtError = e as UnprocessableEntityException;
+      }
+      expect(caughtError).toBeDefined();
+      const response = caughtError!.getResponse() as TaskErrorResponse;
+      expect(response.error).toBe('INVALID_STATUS_TRANSITION');
     });
 
     it('throws INVALID_STATUS_TRANSITION for on_progress → planned (regression)', async () => {
@@ -232,6 +265,8 @@ describe('TasksService', () => {
         ...mockTask,
         status: TaskStatus.ON_PROGRESS,
       });
+      taRepo.find!.mockResolvedValue([]);
+      ttRepo.find!.mockResolvedValue([]);
 
       await expect(
         service.changeStatus(tenantId, 'task-uuid', TaskStatus.PLANNED),
@@ -239,35 +274,30 @@ describe('TasksService', () => {
     });
 
     it('throws INSUFFICIENT_STOCK (RG02) when article stock is insufficient', async () => {
-      taskRepo.findOne!.mockResolvedValue(mockTask);
-      taRepo.find!.mockResolvedValue([
-        { taskId: 'task-uuid', articleId: 'article-uuid', quantity: 9999 },
-      ]);
-      ttRepo.find!.mockResolvedValue([]);
-      articleRepo.findOne!.mockResolvedValue({
-        ...mockArticle,
-        stockQuantity: 100,
-        reservedQuantity: 0,
-      });
+      // 9999 requested, only 100 available
+      setupMocksForTransition(TaskStatus.PLANNED, 9999, 100, 0);
 
-      await expect(
-        service.changeStatus(tenantId, 'task-uuid', TaskStatus.ON_PROGRESS),
-      ).rejects.toThrow(UnprocessableEntityException);
-
+      let caughtError: UnprocessableEntityException | undefined;
       try {
-        taskRepo.findOne!.mockResolvedValue(mockTask);
-        taRepo.find!.mockResolvedValue([
-          { taskId: 'task-uuid', articleId: 'article-uuid', quantity: 9999 },
-        ]);
         await service.changeStatus(
           tenantId,
           'task-uuid',
           TaskStatus.ON_PROGRESS,
         );
-      } catch (e: any) {
-        expect(e.response.error).toBe('INSUFFICIENT_STOCK');
-        expect(e.response.details).toHaveProperty('insufficientArticles');
+      } catch (e) {
+        caughtError = e as UnprocessableEntityException;
       }
+
+      expect(caughtError).toBeDefined();
+      const response = caughtError!.getResponse() as TaskErrorResponse;
+      expect(response.error).toBe('INSUFFICIENT_STOCK');
+      expect(response.details?.insufficientArticles).toEqual([
+        {
+          articleId: 'article-uuid',
+          required: 9999,
+          available: 100,
+        },
+      ]);
     });
 
     it('sets progress to 100 when completing task', async () => {
@@ -283,7 +313,7 @@ describe('TasksService', () => {
         { articleId: 'article-uuid', quantity: 50 },
       ]);
       ttRepo.find!.mockResolvedValue([]);
-      articleRepo.findOne!.mockResolvedValue({
+      mockQueryRunner.manager.findOne.mockResolvedValue({
         ...mockArticle,
         stockQuantity: 500,
         reservedQuantity: 50,
@@ -291,8 +321,6 @@ describe('TasksService', () => {
       });
       taskRepo.save!.mockResolvedValue(completedTask);
       taskRepo.find!.mockResolvedValue([completedTask]);
-      mockQueryRunner.manager.update.mockResolvedValue(undefined);
-      mockQueryRunner.manager.increment.mockResolvedValue(undefined);
 
       const result = await service.changeStatus(
         tenantId,
@@ -310,10 +338,10 @@ describe('TasksService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('rolls back transaction on W1 failure', async () => {
+    it('rolls back transaction on W1 DB failure', async () => {
       taskRepo.findOne!.mockResolvedValue(mockTask);
       taRepo.find!.mockResolvedValue([
-        { articleId: 'article-uuid', quantity: 50 },
+        { taskId: 'task-uuid', articleId: 'article-uuid', quantity: 50 },
       ]);
       ttRepo.find!.mockResolvedValue([]);
       articleRepo.findOne!.mockResolvedValue({
@@ -321,8 +349,10 @@ describe('TasksService', () => {
         stockQuantity: 500,
         reservedQuantity: 0,
       });
-      mockQueryRunner.manager.increment.mockRejectedValue(
-        new Error('DB error'),
+
+      // Force the queryRunner to fail mid-transaction
+      mockQueryRunner.manager.increment.mockRejectedValueOnce(
+        new Error('DB connection lost'),
       );
 
       await expect(
@@ -344,13 +374,16 @@ describe('TasksService', () => {
         costPerHour: 150,
         currency: 'MAD',
       };
+
       taskRepo.findOne!.mockResolvedValue(mockTask);
 
-      const personnelRepo = { findOne: jest.fn().mockResolvedValue(personnel) };
-      // Override personnel repo mock
-      (service as any).personnelRepo = personnelRepo;
+      // Override the personnelRepo directly on the service instance
+      (service as unknown as { personnelRepo: any }).personnelRepo = {
+        findOne: jest.fn().mockResolvedValue(personnel),
+      };
 
       const saved = {
+        id: 'tp-uuid',
         taskId: 'task-uuid',
         personnelId: 'p-uuid',
         quantity: 40,
@@ -358,15 +391,20 @@ describe('TasksService', () => {
         currency: 'MAD',
         totalCost: 6000,
       };
+
       tpRepo.create!.mockReturnValue(saved);
       tpRepo.save!.mockResolvedValue(saved);
+
+      // Mock all find calls for recalcCost
       tpRepo.find!.mockResolvedValue([saved]);
+      taRepo.find!.mockResolvedValue([]);
+      ttRepo.find!.mockResolvedValue([]);
       taskRepo.update!.mockResolvedValue(undefined);
 
       const result = await service.addPersonnel(tenantId, 'task-uuid', {
         personnelId: 'p-uuid',
         quantity: 40,
-        // unitCost NOT provided — should be pre-filled
+        // unitCost NOT provided — should be auto-filled from personnel
       });
 
       expect(result.unitCost).toBe(150);

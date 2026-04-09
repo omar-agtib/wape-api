@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   ConflictException,
-  NotFoundException,
   UnprocessableEntityException,
   ForbiddenException,
+  HttpException,
 } from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { Subscription } from './entities/subscription.entity';
@@ -15,15 +15,20 @@ import { ContactsService } from '../contacts/contacts.service';
 import { MailService } from '../../shared/mail/mail.service';
 import {
   BillingType,
-  ContactType,
   PaymentMethodType,
   PaymentStatus,
+  ReceptionStatus,
   SubscriptionPlan,
   SubscriptionStatus,
   UserRole,
 } from '../../common/enums';
 import { createMockRepository } from '../../test/helpers/mock-repository';
 import { createMockMailService } from '../../test/helpers/mock-services';
+
+type ErrorResponse = {
+  error: string;
+  details?: Record<string, any>;
+};
 
 describe('FinanceService', () => {
   let service: FinanceService;
@@ -44,7 +49,7 @@ describe('FinanceService', () => {
     billingStartDate: '2026-04-01',
     nextBillingDate: '2026-05-01',
     paymentMethod: PaymentMethodType.CREDIT_CARD,
-    status: SubscriptionStatus.PENDING,
+    status: ReceptionStatus.PENDING,
     accessRestricted: false,
   };
 
@@ -142,8 +147,9 @@ describe('FinanceService', () => {
       try {
         await service.createSubscription(tenantId, dto);
       } catch (e: any) {
-        expect(e.response.error).toBe('SUBSCRIPTION_ALREADY_EXISTS');
-        expect(e.response.details).toHaveProperty('existingSubscriptionId');
+        const response = (e as HttpException).getResponse() as ErrorResponse;
+        expect(response.error).toBe('SUBSCRIPTION_ALREADY_EXISTS');
+        expect(response.details).toHaveProperty('existingSubscriptionId');
       }
     });
   });
@@ -152,22 +158,24 @@ describe('FinanceService', () => {
 
   describe('paySupplier', () => {
     beforeEach(() => {
-      txRepo.create!.mockImplementation((data: any) => data);
+      txRepo.create!.mockImplementation((data: unknown) => data);
       txRepo.save!.mockImplementation((entity: any) =>
         Promise.resolve({ ...entity, id: 'tx-uuid' }),
       );
       spRepo.update!.mockResolvedValue(undefined);
+    });
+
+    it('creates partial payment and updates status to partially_paid', async () => {
       spRepo
-        .findOne!.mockResolvedValueOnce(mockSupplierPayment)
+        .findOne!.mockResolvedValueOnce(mockSupplierPayment) // first call: fetch payment
         .mockResolvedValueOnce({
+          // second call: fetch updated
           ...mockSupplierPayment,
           amountPaid: 15000,
           remainingAmount: 9600,
           status: PaymentStatus.PARTIALLY_PAID,
         });
-    });
 
-    it('creates partial payment and updates status to partially_paid', async () => {
       const result = await service.paySupplier(tenantId, 'sp-uuid', {
         amount: 15000,
         paymentMethod: PaymentMethodType.BANK_TRANSFER,
@@ -180,6 +188,7 @@ describe('FinanceService', () => {
     });
 
     it('throws AMOUNT_EXCEEDS_REMAINING (RG-P01) when overpaying', async () => {
+      // Each paySupplier call does one findOne — mock it fresh each time
       spRepo.findOne!.mockResolvedValue(mockSupplierPayment);
 
       await expect(
@@ -190,21 +199,22 @@ describe('FinanceService', () => {
       ).rejects.toThrow(UnprocessableEntityException);
 
       try {
-        spRepo.findOne!.mockResolvedValue(mockSupplierPayment);
         await service.paySupplier(tenantId, 'sp-uuid', {
           amount: 99999,
           paymentMethod: PaymentMethodType.BANK_TRANSFER,
         });
       } catch (e: any) {
-        expect(e.response.error).toBe('AMOUNT_EXCEEDS_REMAINING');
-        expect(e.response.details.remaining).toBe(24600);
+        const response = (e as HttpException).getResponse() as ErrorResponse;
+        expect(response.error).toBe('AMOUNT_EXCEEDS_REMAINING');
+        expect(response.details?.remaining).toBe(24600);
       }
     });
 
     it('marks as paid when full amount is paid', async () => {
       spRepo
-        .findOne!.mockResolvedValueOnce(mockSupplierPayment)
+        .findOne!.mockResolvedValueOnce(mockSupplierPayment) // first call: fetch payment
         .mockResolvedValueOnce({
+          // second call: fetch updated
           ...mockSupplierPayment,
           amountPaid: 24600,
           remainingAmount: 0,
@@ -240,7 +250,8 @@ describe('FinanceService', () => {
           dateTo: '2026-12-31',
         });
       } catch (e: any) {
-        expect(e.response.error).toBe('DATE_RANGE_TOO_LARGE');
+        const response = (e as HttpException).getResponse() as ErrorResponse;
+        expect(response.error).toBe('DATE_RANGE_TOO_LARGE');
       }
     });
 

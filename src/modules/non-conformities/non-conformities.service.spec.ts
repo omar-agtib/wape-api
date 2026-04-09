@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { UnprocessableEntityException } from '@nestjs/common';
+import { UnprocessableEntityException, HttpException } from '@nestjs/common';
 import { NonConformitiesService } from './non-conformities.service';
 import { NonConformity } from './non-conformity.entity';
 import { NcImage } from './nc-image.entity';
@@ -12,6 +12,15 @@ import {
 } from '../../test/helpers/mock-services';
 import { MailService } from '../../shared/mail/mail.service';
 import { RealtimeService } from '../../shared/realtime/realtime.service';
+
+type NcStatusErrorResponse = {
+  error: string;
+  details: {
+    current: NcStatus;
+    allowed: NcStatus[];
+    [key: string]: any; // optional for extra fields
+  };
+};
 
 describe('NonConformitiesService', () => {
   let service: NonConformitiesService;
@@ -131,9 +140,13 @@ describe('NonConformitiesService', () => {
           status: NcStatus.OPEN,
         });
       } catch (e: any) {
-        expect(e.response.error).toBe('INVALID_NC_STATUS_TRANSITION');
-        expect(e.response.details.current).toBe(NcStatus.CLOSED);
-        expect(e.response.details.allowed).toEqual([]);
+        const response = (
+          e as HttpException
+        ).getResponse() as NcStatusErrorResponse;
+
+        expect(response.error).toBe('INVALID_NC_STATUS_TRANSITION');
+        expect(response.details.current).toBe(NcStatus.CLOSED);
+        expect(response.details.allowed).toEqual([]);
       }
     });
 

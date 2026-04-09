@@ -3,12 +3,22 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   NotFoundException,
   UnprocessableEntityException,
+  HttpException,
 } from '@nestjs/common';
 import { ContactsService } from './contacts.service';
 import { Contact } from './contact.entity';
 import { ContactDocument } from './contact-document.entity';
 import { ContactType } from '../../common/enums';
 import { createMockRepository } from '../../test/helpers/mock-repository';
+
+type ErrorResponse = {
+  error: string;
+  details?: {
+    actualType: ContactType;
+    expectedType: ContactType;
+    [key: string]: any;
+  };
+};
 
 describe('ContactsService', () => {
   let service: ContactsService;
@@ -66,9 +76,10 @@ describe('ContactsService', () => {
       try {
         await service.verifyType(tenantId, 'client-uuid', ContactType.SUPPLIER);
       } catch (e: any) {
-        expect(e.response.error).toBe('INVALID_SUPPLIER_TYPE');
-        expect(e.response.details.actualType).toBe(ContactType.CLIENT);
-        expect(e.response.details.expectedType).toBe(ContactType.SUPPLIER);
+        const response = (e as HttpException).getResponse() as ErrorResponse;
+        expect(response.error).toBe('INVALID_SUPPLIER_TYPE');
+        expect(response.details?.actualType).toBe(ContactType.CLIENT);
+        expect(response.details?.expectedType).toBe(ContactType.SUPPLIER);
       }
     });
 
@@ -78,7 +89,8 @@ describe('ContactsService', () => {
       try {
         await service.verifyType(tenantId, 'supplier-uuid', ContactType.CLIENT);
       } catch (e: any) {
-        expect(e.response.error).toBe('INVALID_CLIENT_TYPE');
+        const response = (e as HttpException).getResponse() as ErrorResponse;
+        expect(response.error).toBe('INVALID_CLIENT_TYPE');
       }
     });
 
@@ -92,7 +104,8 @@ describe('ContactsService', () => {
           ContactType.SUBCONTRACTOR,
         );
       } catch (e: any) {
-        expect(e.response.error).toBe('INVALID_SUBCONTRACTOR_TYPE');
+        const response = (e as HttpException).getResponse() as ErrorResponse;
+        expect(response.error).toBe('INVALID_SUBCONTRACTOR_TYPE');
       }
     });
 
