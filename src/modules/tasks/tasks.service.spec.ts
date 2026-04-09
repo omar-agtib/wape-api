@@ -294,6 +294,7 @@ describe('TasksService', () => {
       expect(response.details?.insufficientArticles).toEqual([
         {
           articleId: 'article-uuid',
+          articleName: 'Ciment Portland',
           required: 9999,
           available: 100,
         },
