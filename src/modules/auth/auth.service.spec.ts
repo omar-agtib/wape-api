@@ -15,7 +15,6 @@ describe('AuthService', () => {
   let service: AuthService;
   let usersService: jest.Mocked<UsersService>;
   let tenantsService: jest.Mocked<TenantsService>;
-  let jwtService: jest.Mocked<JwtService>;
 
   const mockTenant: Partial<Tenant> = {
     id: 'tenant-uuid',
@@ -76,7 +75,6 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     usersService = module.get(UsersService);
     tenantsService = module.get(TenantsService);
-    jwtService = module.get(JwtService);
   });
 
   // ── register ────────────────────────────────────────────────────────────────
