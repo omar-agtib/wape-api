@@ -13,10 +13,10 @@ on:
       - develop
 
 env:
-  NODE_VERSION: '24' # ← Changed to 24
+  NODE_VERSION: '24'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/wape-api
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # ← Added this (best fix for the warning)
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ── Lint & Build ───────────────────────────────────────────────────────────
@@ -50,8 +50,8 @@ jobs:
           path: dist/
           retention-days: 1
 
-    # ── Unit Tests ─────────────────────────────────────────────────────────────
-    test:
+  # ── Unit Tests ─────────────────────────────────────────────────────────────
+  test:
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: build
