@@ -13,10 +13,10 @@ on:
       - develop
 
 env:
-  NODE_VERSION: '24' # ← Changed to 24
+  NODE_VERSION: '24'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/wape-api
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # ← Added this (best fix for the warning)
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ── Lint & Build ───────────────────────────────────────────────────────────
@@ -70,9 +70,10 @@ jobs:
         run: npm ci
 
       - name: Run unit tests
-        run: npm run test -- --coverage --passWithNoTests
+        run: npm run test -- --ci --passWithNoTests --runInBand
         env:
           NODE_ENV: test
+          CI: true
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
