@@ -4,6 +4,7 @@ import { UnprocessableEntityException, HttpException } from '@nestjs/common';
 import { NonConformitiesService } from './non-conformities.service';
 import { NonConformity } from './non-conformity.entity';
 import { NcImage } from './nc-image.entity';
+import { Plan } from '../plans/plan.entity';
 import { NcStatus } from '../../common/enums';
 import { createMockRepository } from '../../test/helpers/mock-repository';
 import {
@@ -18,7 +19,7 @@ type NcStatusErrorResponse = {
   details: {
     current: NcStatus;
     allowed: NcStatus[];
-    [key: string]: any; // optional for extra fields
+    [key: string]: any;
   };
 };
 
@@ -43,12 +44,14 @@ describe('NonConformitiesService', () => {
   beforeEach(async () => {
     ncRepo = createMockRepository();
     const imageRepo = createMockRepository();
+    const planRepo = createMockRepository();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NonConformitiesService,
         { provide: getRepositoryToken(NonConformity), useValue: ncRepo },
         { provide: getRepositoryToken(NcImage), useValue: imageRepo },
+        { provide: getRepositoryToken(Plan), useValue: planRepo },
         { provide: MailService, useValue: createMockMailService() },
         { provide: RealtimeService, useValue: createMockRealtimeService() },
       ],

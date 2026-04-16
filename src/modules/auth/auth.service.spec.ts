@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { TenantsService } from '../tenants/tenants.service';
@@ -68,6 +69,14 @@ describe('AuthService', () => {
           provide: MailService,
           useValue: createMockMailService(),
         },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -75,7 +84,6 @@ describe('AuthService', () => {
     usersService = module.get(UsersService);
     tenantsService = module.get(TenantsService);
 
-    // Reset all mocks before each test
     jest.clearAllMocks();
   });
 
@@ -152,7 +160,7 @@ describe('AuthService', () => {
       expect(tenantsService.findBySlug).toHaveBeenCalledWith('acme');
       expect(usersService.findByEmailAndTenant).toHaveBeenCalledWith(
         'admin@acme.ma',
-        'tenant-uuid', // adjust the second argument if your service uses different params
+        'tenant-uuid',
       );
       expect(result.accessToken).toBe('mock-jwt-token');
       expect(result.userId).toBe('user-uuid');
