@@ -20,7 +20,6 @@ import { CreateNcDto } from './dto/create-nc.dto';
 import { UpdateNcDto } from './dto/update-nc.dto';
 import { NcFilterDto } from './dto/nc-filter.dto';
 import { AddNcImageDto } from './dto/add-nc-image.dto';
-import { UploadPlanDto } from './dto/upload-plan.dto';
 import { UpdateNcStatusDto } from './dto/update-nc-status.dto';
 import { NonConformity } from './non-conformity.entity';
 import { NcImage } from './nc-image.entity';
@@ -56,7 +55,7 @@ export class NonConformitiesController {
   @ApiOperation({
     summary: 'Get NC detail with images',
     description:
-      'Returns `planUrl`, `markerX`, `markerY` and array of image URLs. Frontend positions marker with `left: markerX%` and `top: markerY%`.',
+      'Returns `planId`, `planUrl` (deprecated), `markerX`, `markerY` and array of image URLs. Frontend positions marker with `left: markerX%` and `top: markerY%`.',
   })
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.service.findOne(user.tenantId, id);
@@ -129,15 +128,20 @@ export class NonConformitiesController {
   @Patch(':id/plan')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
   @ApiOperation({
-    summary: 'Upload a site plan + set marker position',
-    description:
-      '`markerX` and `markerY` are percentages (0–100) of plan dimensions. Frontend positions with `left: markerX%` and `top: markerY%`.',
+    summary: 'Associer un plan + position marqueur — W-PL3',
+    description: `Deux modes:\n- **Nouveau système (v4.0):** Passer \`planId\` (UUID du plan dans le module Plans)\n- **Héritage (deprecated):** Passer \`planUrl\` (sera supprimé en v5.0)\n\`markerX\` et \`markerY\` sont des pourcentages (0–100) des dimensions du plan.`,
   })
   @ApiResponse({ status: 200, type: NonConformity })
   uploadPlan(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
-    @Body() dto: UploadPlanDto,
+    @Body()
+    dto: {
+      planId?: string;
+      planUrl?: string;
+      markerX?: number;
+      markerY?: number;
+    },
   ): Promise<NonConformity> {
     return this.service.uploadPlan(user.tenantId, id, dto);
   }

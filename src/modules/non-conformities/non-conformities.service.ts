@@ -11,7 +11,7 @@ import { CreateNcDto } from './dto/create-nc.dto';
 import { UpdateNcDto } from './dto/update-nc.dto';
 import { NcFilterDto } from './dto/nc-filter.dto';
 import { AddNcImageDto } from './dto/add-nc-image.dto';
-import { UploadPlanDto } from './dto/upload-plan.dto';
+import { Plan } from '../plans/plan.entity';
 import { UpdateNcStatusDto } from './dto/update-nc-status.dto';
 import { NcStatus } from '../../common/enums';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
@@ -31,6 +31,8 @@ export class NonConformitiesService {
     private readonly ncRepo: Repository<NonConformity>,
     @InjectRepository(NcImage)
     private readonly imageRepo: Repository<NcImage>,
+    @InjectRepository(Plan)
+    private readonly planRepo: Repository<Plan>,
     private readonly mailService: MailService,
     private readonly realtimeService: RealtimeService,
   ) {}
@@ -99,8 +101,29 @@ export class NonConformitiesService {
       where: { ncId: id },
       order: { uploadedAt: 'DESC' },
     });
-    // In Sprint 5+ with S3: images would have signed URLs here
-    return { ...nc, images };
+
+    // JOIN plan data if plan_id set (W-PL3 integration)
+    let planData = null;
+    if (nc.planId) {
+      try {
+        planData = await this.planRepo.findOne({
+          where: { id: nc.planId },
+          select: [
+            'id',
+            'nom',
+            'fileUrl',
+            'fileType',
+            'versionActuelle',
+            'largeurPx',
+            'hauteurPx',
+          ],
+        });
+      } catch {
+        // plan may have been deleted
+      }
+    }
+
+    return { ...nc, images, plan: planData };
   }
 
   async update(
@@ -170,11 +193,17 @@ export class NonConformitiesService {
   async uploadPlan(
     tenantId: string,
     id: string,
-    dto: UploadPlanDto,
+    dto: {
+      planId?: string;
+      planUrl?: string;
+      markerX?: number;
+      markerY?: number;
+    },
   ): Promise<NonConformity> {
     await this.findOneRaw(tenantId, id);
     await this.ncRepo.update(id, {
-      planUrl: dto.planUrl,
+      ...(dto.planId && { planId: dto.planId }),
+      ...(dto.planUrl && { planUrl: dto.planUrl }),
       ...(dto.markerX !== undefined && { markerX: dto.markerX }),
       ...(dto.markerY !== undefined && { markerY: dto.markerY }),
     });

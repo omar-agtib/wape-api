@@ -109,6 +109,10 @@ async function bootstrap() {
       .addTag('gantt', 'Gantt')
       .addTag('formation', 'Formation & Support')
       .addTag('upload', 'File uploads — Cloudinary')
+      .addTag('operateurs', 'Opérateurs CDD/Journaliers')
+      .addTag('pointages', 'Pointage Journalier')
+      .addTag('plans', 'Plans de construction')
+      .addTag('reporting', 'Reporting & Analytics')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);

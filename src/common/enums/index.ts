@@ -89,6 +89,7 @@ export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 export enum BillingType {
   MONTHLY = 'monthly',
   ANNUALLY = 'annually',
+  YEARLY = 'yearly',
 }
 
 export enum SubscriptionPlan {
@@ -135,4 +136,39 @@ export enum SubscriptionStatus {
   ACTIVE = 'active',
   EXPIRED = 'expired',
   CANCELLED = 'cancelled',
+}
+
+// ── Pointage ──────────────────────────────────────────────────────────────────
+export enum StatutPresence {
+  PRESENT = 'present',
+  ABSENT = 'absent',
+  RETARD = 'retard',
+  DEMI_JOURNEE = 'demi_journee',
+}
+
+export enum TypeContratOperateur {
+  CDD = 'cdd',
+  JOURNALIER = 'journalier',
+}
+
+export enum OperateurStatut {
+  ACTIF = 'actif',
+  INACTIF = 'inactif',
+  ARCHIVE = 'archive',
+}
+
+// ── Plans ─────────────────────────────────────────────────────────────────────
+export enum PlanCategorie {
+  ARCHITECTURAL = 'architectural',
+  STRUCTURAL = 'structural',
+  ELECTRICAL = 'electrical',
+  PLUMBING = 'plumbing',
+  GENERAL = 'general',
+  OTHER = 'other',
+}
+
+export enum PlanStatut {
+  ACTIF = 'actif',
+  ARCHIVE = 'archive',
+  BROUILLON = 'brouillon',
 }

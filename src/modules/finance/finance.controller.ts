@@ -157,11 +157,13 @@ This endpoint:
 
   @Patch('supplier-payments/:id/upload-invoice')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.ACCOUNTANT)
-  @ApiOperation({ summary: 'Attach a supplier invoice PDF URL' })
+  @ApiOperation({
+    summary: 'Attach a supplier invoice PDF URL (from Cloudinary)',
+  })
   uploadSupplierInvoice(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
-    @Body() body: { fileUrl: string },
+    @Body() body: { fileUrl: string }, // ← was missing the DTO
   ) {
     return this.service.uploadSupplierInvoice(user.tenantId, id, body.fileUrl);
   }

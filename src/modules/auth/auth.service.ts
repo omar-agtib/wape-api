@@ -4,6 +4,9 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
@@ -23,6 +26,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthTokensDto> {
@@ -118,5 +122,30 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken, role, userId, tenantId };
+  }
+
+  async logout(refreshToken: string): Promise<void> {
+    try {
+      // Decode token to get expiry
+      const payload = this.jwtService.decode<{ exp: number }>(refreshToken);
+      if (payload?.exp) {
+        const ttl = payload.exp - Math.floor(Date.now() / 1000);
+        if (ttl > 0) {
+          // Blacklist the token until it naturally expires
+          await this.cacheManager.set(
+            `blacklist:${refreshToken}`,
+            '1',
+            ttl * 1000, // cache-manager uses milliseconds
+          );
+        }
+      }
+    } catch {
+      // Non-fatal — token may already be expired
+    }
+  }
+
+  async isTokenBlacklisted(token: string): Promise<boolean> {
+    const val = await this.cacheManager.get(`blacklist:${token}`);
+    return !!val;
   }
 }
