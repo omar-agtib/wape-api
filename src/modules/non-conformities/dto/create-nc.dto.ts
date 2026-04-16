@@ -50,4 +50,23 @@ export class CreateNcDto {
   @Min(0)
   @Max(100)
   markerY?: number;
+
+  @ApiPropertyOptional({
+    example: 'medium',
+    enum: ['low', 'medium', 'high', 'critical'],
+  })
+  @IsOptional()
+  @IsString()
+  severity?: string;
+
+  @ApiPropertyOptional({ example: 'Niveau 3 — Mur nord' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  location?: string;
+
+  @ApiPropertyOptional({ example: '2026-05-01' })
+  @IsOptional()
+  @IsString()
+  deadline?: string;
 }

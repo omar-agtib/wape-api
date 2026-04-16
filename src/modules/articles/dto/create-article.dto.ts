@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsIn,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -37,6 +38,15 @@ export class CreateArticleDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   initialStock?: number;
+
+  @ApiPropertyOptional({
+    example: 50,
+    description: 'Minimum stock threshold for alerts',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  minimumStock?: number;
 
   @ApiPropertyOptional({ example: 'Sac 50kg' })
   @IsOptional()

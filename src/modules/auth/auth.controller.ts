@@ -17,6 +17,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto, RegisterDto, AuthTokensDto, MeDto } from './dto/auth.dto';
+import { LogoutDto } from './dto/logout.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from './strategies/jwt.strategy';
@@ -63,6 +64,19 @@ export class AuthController {
       user.role,
       user.email,
     );
+  }
+
+  @Public()
+  @Post('logout')
+  @ApiOperation({
+    summary: 'Logout — invalidate refresh token',
+    description:
+      'Blacklists the refresh token in Redis until its natural expiry. Access tokens expire on their own (15 min).',
+  })
+  @ApiResponse({ status: 200 })
+  async logout(@Body() dto: LogoutDto): Promise<{ message: string }> {
+    await this.authService.logout(dto.refreshToken);
+    return { message: 'Logged out successfully' };
   }
 
   @Get('me')

@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-ioredis-yet';
 
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
@@ -41,6 +43,10 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { GanttModule } from './modules/gantt/gantt.module';
 import { FormationModule } from './modules/formation/formation.module';
 import { FinanceModule } from './modules/finance/finance.module';
+import { OperateursModule } from './modules/operateurs/operateurs.module';
+import { PointagesModule } from './modules/pointages/pointages.module';
+import { PlansModule } from './modules/plans/plans.module';
+import { ReportingModule } from './modules/reporting/reporting.module';
 
 import { Tenant } from './modules/tenants/tenant.entity';
 import { User } from './modules/users/user.entity';
@@ -73,10 +79,26 @@ import { Subscription } from './modules/finance/entities/subscription.entity';
 import { SupplierPayment } from './modules/finance/entities/supplier-payment.entity';
 import { SubcontractorPayment } from './modules/finance/entities/subcontractor-payment.entity';
 import { Transaction } from './modules/finance/entities/transaction.entity';
+import { Operateur } from './modules/operateurs/operateur.entity';
+import { Pointage } from './modules/pointages/pointage.entity';
+import { Plan } from './modules/plans/plan.entity';
+import { PlanVersion } from './modules/plans/plan-version.entity';
 import { envValidationSchema } from './config/env.validation';
 
 @Module({
   imports: [
+    CacheModule.registerAsync({
+      isGlobal: true,
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => ({
+        store: await redisStore({
+          host: config.get<string>('redis.host') ?? 'localhost',
+          port: config.get<number>('redis.port') ?? 6379,
+          password: config.get<string>('redis.password') || undefined,
+        }),
+        ttl: 60 * 15 * 1000, // 15 minutes default
+      }),
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [
@@ -140,6 +162,10 @@ import { envValidationSchema } from './config/env.validation';
           SupplierPayment,
           SubcontractorPayment,
           Transaction,
+          Operateur,
+          Pointage,
+          Plan,
+          PlanVersion,
         ],
         synchronize: config.get<string>('app.nodeEnv') === 'development',
         logging: config.get<string>('app.nodeEnv') === 'development',
@@ -180,6 +206,10 @@ import { envValidationSchema } from './config/env.validation';
     UploadModule,
     MailModule,
     RealtimeModule,
+    OperateursModule,
+    PointagesModule,
+    PlansModule,
+    ReportingModule,
   ],
 
   providers: [

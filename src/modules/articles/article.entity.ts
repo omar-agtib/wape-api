@@ -21,6 +21,14 @@ export class Article extends SoftDeleteEntity {
   @Column({ type: 'varchar', length: 50, nullable: true })
   unit?: string;
 
+  @ApiPropertyOptional({
+    example: 50,
+    description:
+      'Stock alert threshold — alerts when availableQuantity <= minimumStock',
+  })
+  @Column({ type: 'int', name: 'minimum_stock', default: 0 })
+  minimumStock: number;
+
   @ApiProperty({ example: 85.0 })
   @Column({
     type: 'decimal',

@@ -26,7 +26,13 @@ export class NonConformity extends SoftDeleteEntity {
   @Column({ type: 'enum', enum: NcStatus, default: NcStatus.OPEN })
   status: NcStatus;
 
-  @ApiPropertyOptional({ description: 'S3 URL of site plan (PDF or image)' })
+  @ApiPropertyOptional({
+    description: 'Référence vers le plan centralisé (v4.0). Remplace plan_url.',
+  })
+  @Column({ type: 'uuid', name: 'plan_id', nullable: true })
+  planId?: string;
+
+  // DEPRECATED — conservé pour migration, sera supprimé en v5.0
   @Column({ type: 'text', name: 'plan_url', nullable: true })
   planUrl?: string;
 
@@ -57,6 +63,21 @@ export class NonConformity extends SoftDeleteEntity {
     transformer: DecimalTransformer,
   })
   markerY?: number;
+
+  @ApiPropertyOptional({
+    example: 'medium',
+    enum: ['low', 'medium', 'high', 'critical'],
+  })
+  @Column({ type: 'varchar', length: 20, nullable: true, default: 'medium' })
+  severity?: string;
+
+  @ApiPropertyOptional({ example: 'Niveau 3 — Mur nord' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  location?: string;
+
+  @ApiPropertyOptional({ example: '2026-05-01' })
+  @Column({ type: 'date', nullable: true })
+  deadline?: string;
 
   @ApiProperty({ description: 'User who reported the NC' })
   @Column({ type: 'uuid', name: 'reported_by' })

@@ -98,6 +98,7 @@ export class CloudinaryService {
       const result = await this.uploadStream(file.buffer, {
         folder: cloudFolder,
         resource_type: 'auto',
+        type: 'upload',
         use_filename: true,
         unique_filename: true,
         overwrite: false,
