@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { StockService } from './stock.service';
 import { StockFilterDto } from './dto/stock-filter.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('stock')
@@ -12,6 +13,7 @@ export class StockController {
   constructor(private readonly service: StockService) {}
 
   @Get('movements')
+  @RequirePermission('articles_stock', 'R')
   @ApiOperation({
     summary: 'Stock movement history — full audit log',
     description:

@@ -24,8 +24,7 @@ import { UpdateNcStatusDto } from './dto/update-nc-status.dto';
 import { NonConformity } from './non-conformity.entity';
 import { NcImage } from './nc-image.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('non-conformities')
@@ -35,7 +34,7 @@ export class NonConformitiesController {
   constructor(private readonly service: NonConformitiesService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('non_conformities', 'C')
   @ApiOperation({ summary: 'Report a non-conformity' })
   @ApiResponse({ status: 201, type: NonConformity })
   create(
@@ -46,12 +45,14 @@ export class NonConformitiesController {
   }
 
   @Get()
+  @RequirePermission('non_conformities', 'R')
   @ApiOperation({ summary: 'List non-conformities (paginated + filters)' })
   findAll(@CurrentUser() user: JwtPayload, @Query() filters: NcFilterDto) {
     return this.service.findAll(user.tenantId, filters);
   }
 
   @Get(':id')
+  @RequirePermission('non_conformities', 'R')
   @ApiOperation({
     summary: 'Get NC detail with images',
     description:
@@ -62,7 +63,7 @@ export class NonConformitiesController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('non_conformities', 'U')
   @ApiOperation({ summary: 'Update NC details' })
   update(
     @CurrentUser() user: JwtPayload,
@@ -73,7 +74,7 @@ export class NonConformitiesController {
   }
 
   @Patch(':id/status')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('non_conformities', 'U')
   @ApiOperation({
     summary: 'Change NC status',
     description:
@@ -90,7 +91,7 @@ export class NonConformitiesController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('non_conformities', 'D')
   @ApiOperation({ summary: 'Soft delete NC' })
   async remove(
     @CurrentUser() user: JwtPayload,
@@ -101,7 +102,7 @@ export class NonConformitiesController {
   }
 
   @Post(':id/images')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('non_conformities', 'C')
   @ApiOperation({
     summary: 'Add an image to a NC',
     description:
@@ -117,6 +118,7 @@ export class NonConformitiesController {
   }
 
   @Get(':id/images')
+  @RequirePermission('non_conformities', 'R')
   @ApiOperation({ summary: 'List all images for a NC' })
   listImages(
     @CurrentUser() user: JwtPayload,
@@ -126,7 +128,7 @@ export class NonConformitiesController {
   }
 
   @Patch(':id/plan')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('non_conformities', 'U')
   @ApiOperation({
     summary: 'Associer un plan + position marqueur — W-PL3',
     description: `Deux modes:\n- **Nouveau système (v4.0):** Passer \`planId\` (UUID du plan dans le module Plans)\n- **Héritage (deprecated):** Passer \`planUrl\` (sera supprimé en v5.0)\n\`markerX\` et \`markerY\` sont des pourcentages (0–100) des dimensions du plan.`,

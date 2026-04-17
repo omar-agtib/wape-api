@@ -20,8 +20,7 @@ import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { Article } from './article.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -32,7 +31,7 @@ export class ArticlesController {
   constructor(private readonly service: ArticlesService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('articles_stock', 'C')
   @ApiOperation({
     summary: 'Create article — auto-generates unique barcode ID (RG05)',
     description:
@@ -44,6 +43,7 @@ export class ArticlesController {
   }
 
   @Get()
+  @RequirePermission('articles_stock', 'R')
   @ApiOperation({ summary: 'List articles with live stock quantities' })
   @ApiQuery({ name: 'category', required: false })
   @ApiQuery({ name: 'search', required: false })
@@ -60,6 +60,7 @@ export class ArticlesController {
   }
 
   @Get(':id')
+  @RequirePermission('articles_stock', 'R')
   @ApiOperation({
     summary: 'Get article detail + computed availableQuantity',
     description: '`availableQuantity = stockQuantity - reservedQuantity`',
@@ -70,7 +71,7 @@ export class ArticlesController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('articles_stock', 'U')
   @ApiOperation({
     summary: 'Update article — barcodeId excluded (RG05 immutable)',
   })
@@ -83,7 +84,7 @@ export class ArticlesController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('articles_stock', 'D')
   @ApiOperation({ summary: 'Soft delete article' })
   async remove(
     @CurrentUser() user: JwtPayload,

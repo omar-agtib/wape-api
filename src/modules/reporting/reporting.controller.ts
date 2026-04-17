@@ -18,6 +18,7 @@ import { Transaction } from '../finance/entities/transaction.entity';
 import { ProjectFinanceSnapshot } from '../projects/project-finance-snapshot.entity';
 import { StockMovement } from '../stock/stock-movement.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import {
   InvoiceStatus,
@@ -46,9 +47,8 @@ export class ReportingController {
     private stockRepo: Repository<StockMovement>,
   ) {}
 
-  // ── Overview — Global KPIs ─────────────────────────────────────────────────
-
   @Get('overview')
+  @RequirePermission('reporting', 'R')
   @ApiOperation({ summary: 'KPIs globaux — tous les modules' })
   async overview(@CurrentUser() user: JwtPayload) {
     const { tenantId } = user;
@@ -105,7 +105,6 @@ export class ReportingController {
       }),
     ]);
 
-    // Stock alerts — articles with availableQuantity = 0
     const stockAlerts = await this.articleRepo
       .createQueryBuilder('a')
       .where('a.tenant_id = :tenantId', { tenantId })
@@ -139,13 +138,11 @@ export class ReportingController {
     };
   }
 
-  // ── Projects health ────────────────────────────────────────────────────────
-
   @Get('projects')
+  @RequirePermission('reporting', 'R')
   @ApiOperation({ summary: 'Santé de tous les projets — budget, tâches, NC' })
   async projectsHealth(@CurrentUser() user: JwtPayload) {
     const { tenantId } = user;
-
     const projects = await this.projectRepo.find({ where: { tenantId } });
 
     const result = await Promise.all(
@@ -200,9 +197,8 @@ export class ReportingController {
     return result;
   }
 
-  // ── Tasks by status ────────────────────────────────────────────────────────
-
   @Get('tasks')
+  @RequirePermission('reporting', 'R')
   @ApiOperation({ summary: 'Distribution des tâches par statut + coûts' })
   async tasksStats(
     @CurrentUser() user: JwtPayload,
@@ -241,9 +237,8 @@ export class ReportingController {
     };
   }
 
-  // ── NC by severity ─────────────────────────────────────────────────────────
-
   @Get('non-conformities')
+  @RequirePermission('reporting', 'R')
   @ApiOperation({ summary: 'Non-conformités par statut et par projet' })
   async ncStats(@CurrentUser() user: JwtPayload) {
     const { tenantId } = user;
@@ -265,9 +260,8 @@ export class ReportingController {
     };
   }
 
-  // ── Finance summary ────────────────────────────────────────────────────────
-
   @Get('finance')
+  @RequirePermission('reporting', 'R')
   @ApiOperation({
     summary: 'Résumé financier — transactions par type, par mois',
   })
@@ -290,14 +284,12 @@ export class ReportingController {
       .andWhere(`tx.payment_date >= NOW() - INTERVAL '${monthsInt} months'`)
       .getMany();
 
-    // Group by month
     const byMonth: Record<string, number> = {};
     transactions.forEach((tx) => {
       const month = tx.paymentDate.toISOString().slice(0, 7);
       byMonth[month] = (byMonth[month] ?? 0) + tx.amount;
     });
 
-    // By type
     const byType = {
       subscription: transactions
         .filter((tx) => tx.paymentType === ('subscription' as any))
@@ -320,9 +312,8 @@ export class ReportingController {
     };
   }
 
-  // ── Stock ──────────────────────────────────────────────────────────────────
-
   @Get('stock')
+  @RequirePermission('reporting', 'R')
   @ApiOperation({ summary: 'Résumé stock — alertes, articles critiques' })
   async stockStats(@CurrentUser() user: JwtPayload) {
     const { tenantId } = user;

@@ -9,8 +9,8 @@ import { OperateursService } from './operateurs.service';
 import { CreateOperateurDto } from './dto/create-operateur.dto';
 import { UpdateOperateurDto } from './dto/update-operateur.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { OperateurStatut, UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { OperateurStatut } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('operateurs')
@@ -20,13 +20,14 @@ export class OperateursController {
   constructor(private readonly service: OperateursService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.SITE_MANAGER)
+  @RequirePermission('operateurs', 'C')
   @ApiOperation({ summary: 'Créer un opérateur CDD/journalier' })
   create(@CurrentUser() user: JwtPayload, @Body() dto: CreateOperateurDto) {
     return this.service.create(user.tenantId, dto);
   }
 
   @Get()
+  @RequirePermission('operateurs', 'R')
   @ApiOperation({ summary: 'Liste des opérateurs' })
   @ApiQuery({ name: 'projetId', required: false })
   @ApiQuery({ name: 'statut', required: false, enum: OperateurStatut })
@@ -52,13 +53,14 @@ export class OperateursController {
   }
 
   @Get(':id')
+  @RequirePermission('operateurs', 'R')
   @ApiOperation({ summary: 'Détail opérateur' })
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.service.findOne(user.tenantId, id);
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.SITE_MANAGER)
+  @RequirePermission('operateurs', 'U')
   @ApiOperation({ summary: 'Modifier un opérateur' })
   update(
     @CurrentUser() user: JwtPayload,

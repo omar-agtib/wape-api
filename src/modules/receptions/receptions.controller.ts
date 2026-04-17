@@ -9,8 +9,7 @@ import { ReceptionsService } from './receptions.service';
 import { ReceiveDto } from './dto/receive.dto';
 import { ReceptionFilterDto } from './dto/reception-filter.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('receptions')
@@ -20,6 +19,7 @@ export class ReceptionsController {
   constructor(private readonly service: ReceptionsService) {}
 
   @Get()
+  @RequirePermission('receptions', 'R')
   @ApiOperation({
     summary: 'List reception lines (paginated)',
     description:
@@ -33,7 +33,7 @@ export class ReceptionsController {
   }
 
   @Post(':id/receive')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('receptions', 'C')
   @ApiOperation({
     summary: 'Record goods receipt — triggers W6',
     description: `**Workflow W6:**
@@ -43,7 +43,6 @@ export class ReceptionsController {
 4. Creates a \`stock_movements\` record (type=incoming)
 5. Updates \`purchase_order_lines.receivedQuantity\`
 6. Re-evaluates PO status → partial or completed
-
 All steps run in a single DB transaction.`,
   })
   @ApiResponse({ status: 201 })

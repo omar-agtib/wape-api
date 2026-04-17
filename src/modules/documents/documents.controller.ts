@@ -18,8 +18,7 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { DocumentFilterDto } from './dto/document-filter.dto';
 import { Document } from './document.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('documents')
@@ -29,7 +28,7 @@ export class DocumentsController {
   constructor(private readonly service: DocumentsService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('documents', 'C')
   @ApiOperation({
     summary: 'Add a document to the central repository (W4)',
     description: `This is the **central document repository** — all documents across all modules land here.
@@ -45,6 +44,7 @@ Pass the S3 URL after uploading directly to S3 from the frontend.
   }
 
   @Get()
+  @RequirePermission('documents', 'R')
   @ApiOperation({
     summary: 'Search documents (paginated)',
     description:
@@ -58,6 +58,7 @@ Pass the S3 URL after uploading directly to S3 from the frontend.
   }
 
   @Get(':id')
+  @RequirePermission('documents', 'R')
   @ApiOperation({ summary: 'Get document by ID' })
   @ApiResponse({ status: 200, type: Document })
   findOne(
@@ -68,7 +69,7 @@ Pass the S3 URL after uploading directly to S3 from the frontend.
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('documents', 'D')
   @ApiOperation({ summary: 'Soft delete a document' })
   async remove(
     @CurrentUser() user: JwtPayload,

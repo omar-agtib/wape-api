@@ -26,8 +26,7 @@ import { Tutorial } from './tutorial.entity';
 import { SupportTicket } from './support-ticket.entity';
 import { TicketMessage } from './ticket-message.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -40,7 +39,7 @@ export class FormationController {
   // ── Tutorials ─────────────────────────────────────────────────────────────
 
   @Post('tutorials')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('formation_support', 'C')
   @ApiOperation({ summary: 'Create a tutorial (admin only)' })
   @ApiResponse({ status: 201, type: Tutorial })
   createTutorial(
@@ -51,6 +50,7 @@ export class FormationController {
   }
 
   @Get('tutorials')
+  @RequirePermission('formation_support', 'R')
   @ApiOperation({
     summary: 'List tutorials',
     description:
@@ -66,6 +66,7 @@ export class FormationController {
   }
 
   @Get('tutorials/:id')
+  @RequirePermission('formation_support', 'R')
   @ApiOperation({ summary: 'Get tutorial detail' })
   @ApiResponse({ status: 200, type: Tutorial })
   findOneTutorial(@Param('id') id: string): Promise<Tutorial> {
@@ -73,7 +74,7 @@ export class FormationController {
   }
 
   @Put('tutorials/:id')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('formation_support', 'U')
   @ApiOperation({ summary: 'Update tutorial (admin only)' })
   updateTutorial(
     @Param('id') id: string,
@@ -83,7 +84,7 @@ export class FormationController {
   }
 
   @Delete('tutorials/:id')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('formation_support', 'D')
   @ApiOperation({ summary: 'Delete tutorial (admin only)' })
   async deleteTutorial(@Param('id') id: string): Promise<{ message: string }> {
     await this.service.deleteTutorial(id);
@@ -93,6 +94,7 @@ export class FormationController {
   // ── Support Tickets ───────────────────────────────────────────────────────
 
   @Post('support/tickets')
+  @RequirePermission('formation_support', 'C')
   @ApiOperation({ summary: 'Create a support ticket' })
   @ApiResponse({ status: 201, type: SupportTicket })
   createTicket(
@@ -103,6 +105,7 @@ export class FormationController {
   }
 
   @Get('support/tickets')
+  @RequirePermission('formation_support', 'R')
   @ApiOperation({ summary: 'List support tickets for your tenant' })
   findAllTickets(
     @CurrentUser() user: JwtPayload,
@@ -112,12 +115,14 @@ export class FormationController {
   }
 
   @Get('support/tickets/:id')
+  @RequirePermission('formation_support', 'R')
   @ApiOperation({ summary: 'Get ticket detail with all messages' })
   findOneTicket(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.service.findOneTicket(user.tenantId, id);
   }
 
   @Post('support/tickets/:id/messages')
+  @RequirePermission('formation_support', 'C')
   @ApiOperation({
     summary: 'Add a message to a ticket',
     description: 'Admin messages are flagged as `isSupportAgent: true`.',
@@ -132,7 +137,7 @@ export class FormationController {
   }
 
   @Patch('support/tickets/:id/status')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('formation_support', 'U')
   @ApiOperation({ summary: 'Update ticket status (admin only)' })
   updateTicketStatus(
     @CurrentUser() user: JwtPayload,

@@ -24,6 +24,7 @@ import { TransactionFilterDto } from './dto/transaction-filter.dto';
 import { ValidateTransactionDto } from './dto/validate-transaction.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { PaymentStatus, UserRole } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -38,6 +39,7 @@ export class FinanceController {
   // ── Dashboard ──────────────────────────────────────────────────────────────
 
   @Get('dashboard')
+  @RequirePermission('finance', 'R')
   @ApiOperation({
     summary: 'Finance dashboard — KPIs, monthly chart, subscription status',
     description: `Returns:
@@ -52,13 +54,14 @@ export class FinanceController {
   // ── Subscriptions ──────────────────────────────────────────────────────────
 
   @Get('subscriptions')
+  @RequirePermission('finance', 'R')
   @ApiOperation({ summary: 'Get current tenant subscription' })
   getSubscription(@CurrentUser() user: JwtPayload) {
     return this.service.getSubscription(user.tenantId);
   }
 
   @Post('subscriptions')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('subscriptions', 'C')
   @ApiOperation({
     summary: 'Create / activate a subscription (admin only)',
     description:
@@ -77,6 +80,7 @@ export class FinanceController {
   }
 
   @Post('subscriptions/webhook')
+  @RequirePermission('subscriptions', 'U')
   @ApiOperation({
     summary: 'Payment gateway webhook — W11',
     description: `Simulates a successful payment callback from Stripe/PayPal/CMI.
@@ -113,6 +117,7 @@ This endpoint:
   }
 
   @Get('supplier-payments')
+  @RequirePermission('finance', 'R')
   @ApiOperation({ summary: 'List supplier payments (paginated + filters)' })
   @ApiQuery({ name: 'supplierId', required: false })
   @ApiQuery({ name: 'projectId', required: false })
@@ -163,7 +168,7 @@ This endpoint:
   uploadSupplierInvoice(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
-    @Body() body: { fileUrl: string }, // ← was missing the DTO
+    @Body() body: { fileUrl: string },
   ) {
     return this.service.uploadSupplierInvoice(user.tenantId, id, body.fileUrl);
   }
@@ -182,6 +187,7 @@ This endpoint:
   }
 
   @Get('subcontractor-payments')
+  @RequirePermission('finance', 'R')
   @ApiOperation({
     summary: 'List subcontractor payments (paginated + filters)',
   })
@@ -229,6 +235,7 @@ This endpoint:
   // ── Transactions ───────────────────────────────────────────────────────────
 
   @Get('transactions')
+  @RequirePermission('finance', 'R')
   @ApiOperation({
     summary: 'Central transaction ledger — immutable audit log (RG-P03)',
     description:

@@ -23,8 +23,8 @@ import { AddContactDocumentDto } from './dto/add-document.dto';
 import { Contact } from './contact.entity';
 import { ContactDocument } from './contact-document.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole, ContactType } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { ContactType } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('contacts')
@@ -34,7 +34,7 @@ export class ContactsController {
   constructor(private readonly service: ContactsService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('contacts', 'C')
   @ApiOperation({
     summary: 'Create a contact (supplier / client / subcontractor)',
     description:
@@ -49,6 +49,7 @@ export class ContactsController {
   }
 
   @Get()
+  @RequirePermission('contacts', 'R')
   @ApiOperation({ summary: 'List contacts (paginated + filter by type)' })
   @ApiQuery({ name: 'contactType', required: false, enum: ContactType })
   @ApiQuery({ name: 'search', required: false })
@@ -57,6 +58,7 @@ export class ContactsController {
   }
 
   @Get(':id')
+  @RequirePermission('contacts', 'R')
   @ApiOperation({ summary: 'Get contact detail with documents' })
   @ApiResponse({ status: 200 })
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
@@ -64,7 +66,7 @@ export class ContactsController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('contacts', 'U')
   @ApiOperation({
     summary: 'Update contact — contactType excluded (RG17 immutable)',
   })
@@ -77,7 +79,7 @@ export class ContactsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('contacts', 'D')
   @ApiOperation({ summary: 'Soft delete contact' })
   async remove(
     @CurrentUser() user: JwtPayload,
@@ -88,7 +90,7 @@ export class ContactsController {
   }
 
   @Post(':id/documents')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('contacts', 'C')
   @ApiOperation({
     summary: 'Attach a document to a contact',
     description:
@@ -104,6 +106,7 @@ export class ContactsController {
   }
 
   @Get(':id/documents')
+  @RequirePermission('contacts', 'R')
   @ApiOperation({ summary: 'List documents attached to a contact' })
   listDocuments(
     @CurrentUser() user: JwtPayload,
