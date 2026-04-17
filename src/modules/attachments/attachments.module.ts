@@ -10,6 +10,7 @@ import { TasksModule } from '../tasks/tasks.module';
 import { InvoicesModule } from '../invoices/invoices.module';
 import { RealtimeModule } from '../../shared/realtime/realtime.module';
 import { ProjectsModule } from '../projects/projects.module';
+import { MailModule } from '../../shared/mail/mail.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ProjectsModule } from '../projects/projects.module';
     forwardRef(() => InvoicesModule),
     RealtimeModule,
     ProjectsModule,
+    MailModule,
   ],
   controllers: [AttachmentsController],
   providers: [AttachmentsService],

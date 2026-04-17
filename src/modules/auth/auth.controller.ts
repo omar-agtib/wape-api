@@ -6,6 +6,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -57,7 +58,17 @@ export class AuthController {
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Refresh tokens — send refreshToken as Bearer' })
   @ApiResponse({ status: 200, type: AuthTokensDto })
-  refresh(@CurrentUser() user: JwtRefreshPayload): Promise<AuthTokensDto> {
+  async refresh(
+    @CurrentUser() user: JwtRefreshPayload,
+  ): Promise<AuthTokensDto> {
+    const blacklisted = await this.authService.isTokenBlacklisted(
+      user.refreshToken,
+    );
+    if (blacklisted)
+      throw new UnauthorizedException({
+        error: 'TOKEN_REVOKED',
+        message: 'Token has been revoked',
+      });
     return this.authService.refresh(
       user.sub,
       user.tenantId,
