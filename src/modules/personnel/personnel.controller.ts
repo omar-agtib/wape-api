@@ -20,8 +20,7 @@ import { CreatePersonnelDto } from './dto/create-personnel.dto';
 import { UpdatePersonnelDto } from './dto/update-personnel.dto';
 import { Personnel } from './personnel.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -32,7 +31,7 @@ export class PersonnelController {
   constructor(private readonly service: PersonnelService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('personnel', 'C')
   @ApiOperation({ summary: 'Create a personnel member' })
   @ApiResponse({ status: 201, type: Personnel })
   create(
@@ -43,6 +42,7 @@ export class PersonnelController {
   }
 
   @Get()
+  @RequirePermission('personnel', 'R')
   @ApiOperation({ summary: 'List all personnel (paginated)' })
   @ApiQuery({ name: 'role', required: false })
   @ApiQuery({
@@ -61,6 +61,7 @@ export class PersonnelController {
   }
 
   @Get(':id')
+  @RequirePermission('personnel', 'R')
   @ApiOperation({ summary: 'Get personnel member by ID' })
   @ApiResponse({ status: 200, type: Personnel })
   @ApiResponse({ status: 404, description: 'Not found' })
@@ -72,7 +73,7 @@ export class PersonnelController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('personnel', 'U')
   @ApiOperation({
     summary: 'Update personnel member',
     description:
@@ -88,7 +89,7 @@ export class PersonnelController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('personnel', 'D')
   @ApiOperation({ summary: 'Soft delete personnel member' })
   @ApiResponse({ status: 200 })
   async remove(

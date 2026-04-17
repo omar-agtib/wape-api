@@ -19,8 +19,7 @@ import { ConfirmAttachmentDto } from './dto/confirm-attachment.dto';
 import { AttachmentFilterDto } from './dto/attachment-filter.dto';
 import { Attachment } from './attachment.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('attachments')
@@ -30,7 +29,7 @@ export class AttachmentsController {
   constructor(private readonly service: AttachmentsService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('attachments', 'C')
   @ApiOperation({
     summary: 'Create an attachment (draft)',
     description: `All tasks must be **completed** (RG03) and not already in a confirmed attachment (RG18).
@@ -51,6 +50,7 @@ If \`subcontractorId\` is null → **internal** (no invoice, just finance update
   }
 
   @Get()
+  @RequirePermission('attachments', 'R')
   @ApiOperation({ summary: 'List attachments (paginated + filters)' })
   findAll(
     @CurrentUser() user: JwtPayload,
@@ -60,13 +60,14 @@ If \`subcontractorId\` is null → **internal** (no invoice, just finance update
   }
 
   @Get(':id')
+  @RequirePermission('attachments', 'R')
   @ApiOperation({ summary: 'Get attachment detail with task IDs' })
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.service.findOne(user.tenantId, id);
   }
 
   @Patch(':id/confirm')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('attachments', 'U')
   @ApiOperation({
     summary: 'Confirm attachment — triggers W7',
     description: `**Workflow W7 (full transaction):**
@@ -75,7 +76,6 @@ If \`subcontractorId\` is null → **internal** (no invoice, just finance update
 3. Updates \`project_finance_snapshot\` (total_spent, remaining_budget, breakdown)
 4. If **external** (subcontractor set): auto-creates invoice (\`pending_validation\`)
 5. If **internal** (no subcontractor): status stays \`confirmed\`, no invoice
-
 Any failure rolls back the entire transaction.`,
   })
   @ApiResponse({ status: 200 })

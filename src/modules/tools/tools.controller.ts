@@ -22,8 +22,8 @@ import { CreateToolMovementDto } from './dto/tool-movement.dto';
 import { Tool } from './tool.entity';
 import { ToolMovement } from './tool-movement.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole, ToolStatus } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { ToolStatus } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -34,7 +34,7 @@ export class ToolsController {
   constructor(private readonly service: ToolsService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('tools', 'C')
   @ApiOperation({ summary: 'Create a tool' })
   @ApiResponse({ status: 201, type: Tool })
   create(
@@ -45,6 +45,7 @@ export class ToolsController {
   }
 
   @Get()
+  @RequirePermission('tools', 'R')
   @ApiOperation({ summary: 'List tools (paginated + filters)' })
   @ApiQuery({ name: 'status', required: false, enum: ToolStatus })
   @ApiQuery({ name: 'category', required: false })
@@ -64,6 +65,7 @@ export class ToolsController {
   }
 
   @Get(':id')
+  @RequirePermission('tools', 'R')
   @ApiOperation({ summary: 'Get tool detail' })
   @ApiResponse({ status: 200, type: Tool })
   findOne(
@@ -74,7 +76,7 @@ export class ToolsController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tools', 'U')
   @ApiOperation({ summary: 'Update tool' })
   update(
     @CurrentUser() user: JwtPayload,
@@ -85,7 +87,7 @@ export class ToolsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('tools', 'D')
   @ApiOperation({ summary: 'Soft delete tool' })
   async remove(
     @CurrentUser() user: JwtPayload,
@@ -96,7 +98,7 @@ export class ToolsController {
   }
 
   @Post(':id/movements')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tools', 'C')
   @ApiOperation({
     summary: 'Create a manual tool movement (IN / OUT)',
     description: `Rules:
@@ -124,16 +126,13 @@ Response includes both the movement record and the **updated tool** with its new
     );
     return {
       movement,
-      tool: {
-        id: tool.id,
-        name: tool.name,
-        status: tool.status,
-      },
+      tool: { id: tool.id, name: tool.name, status: tool.status },
       message: `Tool is now ${tool.status}`,
     };
   }
 
   @Get(':id/movements')
+  @RequirePermission('tools', 'R')
   @ApiOperation({ summary: 'Get movement history for a tool' })
   getMovements(
     @CurrentUser() user: JwtPayload,

@@ -21,8 +21,7 @@ import { PoFilterDto } from './dto/po-filter.dto';
 import { PurchaseOrder } from './purchase-order.entity';
 import { ReceptionsService } from '../receptions/receptions.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('purchase-orders')
@@ -36,7 +35,7 @@ export class PurchaseOrdersController {
   ) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.ACCOUNTANT)
+  @RequirePermission('purchase_orders', 'C')
   @ApiOperation({
     summary: 'Create a purchase order (draft)',
     description:
@@ -51,19 +50,21 @@ export class PurchaseOrdersController {
   }
 
   @Get()
+  @RequirePermission('purchase_orders', 'R')
   @ApiOperation({ summary: 'List purchase orders (paginated + filters)' })
   findAll(@CurrentUser() user: JwtPayload, @Query() filters: PoFilterDto) {
     return this.service.findAll(user.tenantId, filters);
   }
 
   @Get(':id')
+  @RequirePermission('purchase_orders', 'R')
   @ApiOperation({ summary: 'Get PO detail with all lines' })
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.service.findOne(user.tenantId, id);
   }
 
   @Patch(':id/confirm')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.ACCOUNTANT)
+  @RequirePermission('purchase_orders', 'U')
   @ApiOperation({
     summary: 'Confirm purchase order — triggers W5',
     description: `**Workflow W5:**
@@ -75,11 +76,8 @@ export class PurchaseOrdersController {
   @ApiResponse({ status: 422, description: 'PO_NOT_DRAFT' })
   async confirm(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     const { purchaseOrder } = await this.service.confirm(user.tenantId, id);
-
-    // W5 — create reception rows for each line
     const lines = await this.service.getLines(id);
     const receptions = await this.receptionsService.createFromPo(id, lines);
-
     return {
       purchaseOrder,
       receptions,

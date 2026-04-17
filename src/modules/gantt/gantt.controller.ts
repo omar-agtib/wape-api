@@ -9,6 +9,7 @@ import {
 import { GanttService } from './gantt.service';
 import { GanttFilterDto } from './dto/gantt-filter.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('gantt')
@@ -18,16 +19,15 @@ export class GanttController {
   constructor(private readonly service: GanttService) {}
 
   @Get(':id/gantt')
+  @RequirePermission('gantt', 'R')
   @ApiOperation({
     summary: 'Get Gantt data for a project (C2)',
     description: `Returns structured JSON for building a Gantt chart on the frontend.
-
 **All filters are optional and combinable:**
 - \`startDate\` + \`endDate\` — tasks whose period overlaps the range
 - \`personnelId\` — tasks that include this personnel member
 - \`toolId\` — tasks that use this specific tool
 - \`articleId\` — tasks that use this specific article
-
 Each task includes its full **personnel**, **tools**, and **articles** arrays.`,
   })
   @ApiQuery({

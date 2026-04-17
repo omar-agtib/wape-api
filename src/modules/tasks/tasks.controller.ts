@@ -29,8 +29,8 @@ import {
   UpdateTaskToolDto,
 } from './dto/task-resource.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole, TaskStatus } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { TaskStatus } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -40,14 +40,17 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 export class TasksController {
   constructor(private readonly service: TasksService) {}
 
+  // ── Core CRUD ──────────────────────────────────────────────────────────────
+
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'C')
   @ApiOperation({ summary: 'Create a task' })
   create(@CurrentUser() user: JwtPayload, @Body() dto: CreateTaskDto) {
     return this.service.create(user.tenantId, dto);
   }
 
   @Get()
+  @RequirePermission('tasks', 'R')
   @ApiOperation({ summary: 'List tasks (paginated)' })
   @ApiQuery({ name: 'projectId', required: false })
   @ApiQuery({ name: 'status', required: false, enum: TaskStatus })
@@ -67,13 +70,14 @@ export class TasksController {
   }
 
   @Get(':id')
+  @RequirePermission('tasks', 'R')
   @ApiOperation({ summary: 'Task detail with personnel, articles, tools' })
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.service.findOne(user.tenantId, id);
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'U')
   @ApiOperation({ summary: 'Update task' })
   update(
     @CurrentUser() user: JwtPayload,
@@ -84,7 +88,7 @@ export class TasksController {
   }
 
   @Patch(':id/status')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'U')
   @ApiOperation({
     summary: 'Change task status — triggers W1 or W2',
     description: `**planned → on_progress (W1):** Checks stock for all articles. Reserves stock. Creates OUT movements for all tools.  
@@ -106,7 +110,7 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('tasks', 'D')
   @ApiOperation({ summary: 'Soft delete task' })
   async remove(
     @CurrentUser() user: JwtPayload,
@@ -117,8 +121,9 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   }
 
   // ── Personnel ──────────────────────────────────────────────────────────────
+
   @Post(':id/personnel')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'C')
   @ApiOperation({
     summary: 'Add personnel to task (unitCost pre-filled, overridable)',
   })
@@ -131,13 +136,14 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   }
 
   @Get(':id/personnel')
+  @RequirePermission('tasks', 'R')
   @ApiOperation({ summary: 'List personnel assigned to task' })
   listPersonnel(@CurrentUser() u: JwtPayload, @Param('id') id: string) {
     return this.service.listPersonnel(u.tenantId, id);
   }
 
   @Put(':id/personnel/:rid')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'U')
   @ApiOperation({ summary: 'Update personnel assignment' })
   updatePersonnel(
     @CurrentUser() u: JwtPayload,
@@ -149,7 +155,7 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   }
 
   @Delete(':id/personnel/:rid')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'D')
   @ApiOperation({ summary: 'Remove personnel from task' })
   async removePersonnel(
     @CurrentUser() u: JwtPayload,
@@ -161,8 +167,9 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   }
 
   // ── Articles ───────────────────────────────────────────────────────────────
+
   @Post(':id/articles')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'C')
   @ApiOperation({
     summary: 'Add article to task (unitCost pre-filled from article.unitPrice)',
   })
@@ -175,13 +182,14 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   }
 
   @Get(':id/articles')
+  @RequirePermission('tasks', 'R')
   @ApiOperation({ summary: 'List articles assigned to task' })
   listArticles(@CurrentUser() u: JwtPayload, @Param('id') id: string) {
     return this.service.listArticles(u.tenantId, id);
   }
 
   @Put(':id/articles/:rid')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'U')
   @ApiOperation({ summary: 'Update article quantity / cost' })
   updateArticle(
     @CurrentUser() u: JwtPayload,
@@ -193,7 +201,7 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   }
 
   @Delete(':id/articles/:rid')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'D')
   @ApiOperation({ summary: 'Remove article from task' })
   async removeArticle(
     @CurrentUser() u: JwtPayload,
@@ -205,8 +213,9 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   }
 
   // ── Tools ──────────────────────────────────────────────────────────────────
+
   @Post(':id/tools')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'C')
   @ApiOperation({ summary: 'Add tool to task' })
   addTool(
     @CurrentUser() u: JwtPayload,
@@ -217,13 +226,14 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   }
 
   @Get(':id/tools')
+  @RequirePermission('tasks', 'R')
   @ApiOperation({ summary: 'List tools assigned to task' })
   listTools(@CurrentUser() u: JwtPayload, @Param('id') id: string) {
     return this.service.listTools(u.tenantId, id);
   }
 
   @Put(':id/tools/:rid')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'U')
   @ApiOperation({ summary: 'Update tool quantity / cost' })
   updateTool(
     @CurrentUser() u: JwtPayload,
@@ -235,7 +245,7 @@ All steps run in a single DB transaction — any failure rolls back completely.`
   }
 
   @Delete(':id/tools/:rid')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.SITE_MANAGER)
+  @RequirePermission('tasks', 'D')
   @ApiOperation({ summary: 'Remove tool from task' })
   async removeTool(
     @CurrentUser() u: JwtPayload,

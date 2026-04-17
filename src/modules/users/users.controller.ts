@@ -18,8 +18,7 @@ import { InviteUserDto } from './dto/invite-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './user.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('users')
@@ -28,7 +27,8 @@ import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 export class UsersController {
   constructor(private readonly service: UsersService) {}
 
-  // ── Current user ─────────────────────────────────────────────────────────────
+  // ── Self-service — no permission decorator, every authenticated user ───────
+
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, type: User })
@@ -47,16 +47,17 @@ export class UsersController {
     });
   }
 
-  // ── Team management ──────────────────────────────────────────────────────────
+  // ── Team management — admin only via matrix ───────────────────────────────
+
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('users', 'R')
   @ApiOperation({ summary: 'List all users in your company' })
   listTeam(@CurrentUser() user: JwtPayload) {
     return this.service.listByTenant(user.tenantId);
   }
 
   @Post('invite')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('users', 'C')
   @ApiOperation({
     summary: 'Invite a new team member (admin only)',
     description: `Creates a user in your tenant with a temporary password.
@@ -73,7 +74,7 @@ Admin role cannot be assigned post-registration.`,
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('users', 'U')
   @ApiOperation({
     summary: 'Update team member (admin only)',
     description:
@@ -89,7 +90,7 @@ Admin role cannot be assigned post-registration.`,
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('users', 'D')
   @ApiOperation({ summary: 'Deactivate a team member (admin only)' })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: 'CANNOT_DEACTIVATE_SELF' })

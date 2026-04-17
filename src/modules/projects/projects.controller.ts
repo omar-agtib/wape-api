@@ -20,9 +20,8 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectFilterDto } from './dto/project-filter.dto';
 import { Project } from './project.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 
 @ApiTags('projects')
 @ApiBearerAuth('JWT')
@@ -31,7 +30,7 @@ export class ProjectsController {
   constructor(private readonly service: ProjectsService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('projects', 'C')
   @ApiOperation({ summary: 'Create a project' })
   @ApiResponse({ status: 201, type: Project })
   @ApiResponse({
@@ -46,6 +45,7 @@ export class ProjectsController {
   }
 
   @Get()
+  @RequirePermission('projects', 'R')
   @ApiOperation({ summary: 'List projects (paginated + filters)' })
   @ApiResponse({ status: 200 })
   findAll(@CurrentUser() user: JwtPayload, @Query() filters: ProjectFilterDto) {
@@ -53,6 +53,7 @@ export class ProjectsController {
   }
 
   @Get(':id')
+  @RequirePermission('projects', 'R')
   @ApiOperation({ summary: 'Get project detail + finance snapshot' })
   @ApiResponse({ status: 200, type: Project })
   @ApiResponse({ status: 404, description: 'PROJECT_NOT_FOUND' })
@@ -61,7 +62,7 @@ export class ProjectsController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @RequirePermission('projects', 'U')
   @ApiOperation({
     summary:
       'Update project — budget change triggers W10 (finance snapshot update)',
@@ -76,7 +77,7 @@ export class ProjectsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @RequirePermission('projects', 'D')
   @ApiOperation({ summary: 'Soft delete project' })
   @ApiResponse({ status: 200 })
   async remove(
@@ -88,6 +89,7 @@ export class ProjectsController {
   }
 
   @Get(':id/finance')
+  @RequirePermission('finance', 'R')
   @ApiOperation({
     summary:
       'Finance dashboard — budget vs spent, alert level, breakdown by category',
@@ -101,6 +103,7 @@ export class ProjectsController {
   }
 
   @Get(':id/tasks')
+  @RequirePermission('tasks', 'R')
   @ApiOperation({
     summary: 'Tasks for this project',
     description: 'Convenience alias for `GET /api/tasks?projectId=:id`',
@@ -114,6 +117,7 @@ export class ProjectsController {
   }
 
   @Get(':id/attachments')
+  @RequirePermission('attachments', 'R')
   @ApiOperation({
     summary: 'Attachments for this project (C9)',
     description: 'Convenience alias for `GET /api/attachments?projectId=:id`',
@@ -127,6 +131,7 @@ export class ProjectsController {
   }
 
   @Get(':id/purchase-orders')
+  @RequirePermission('purchase_orders', 'R')
   @ApiOperation({
     summary: 'Purchase orders linked to this project (C8)',
     description:

@@ -84,6 +84,7 @@ import { Pointage } from './modules/pointages/pointage.entity';
 import { Plan } from './modules/plans/plan.entity';
 import { PlanVersion } from './modules/plans/plan-version.entity';
 import { envValidationSchema } from './config/env.validation';
+import { PermissionGuard } from './common/guards/permission.guard';
 
 @Module({
   imports: [
@@ -216,6 +217,7 @@ import { envValidationSchema } from './config/env.validation';
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: PermissionGuard },
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
   ],
 })

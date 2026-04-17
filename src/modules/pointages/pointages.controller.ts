@@ -19,8 +19,8 @@ import { PointagesService } from './pointages.service';
 import { CreatePointageDto } from './dto/create-pointage.dto';
 import { UpdatePointageDto } from './dto/update-pointage.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { StatutPresence, UserRole } from '../../common/enums';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { StatutPresence } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('pointages')
@@ -29,9 +29,8 @@ import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 export class PointagesController {
   constructor(private readonly service: PointagesService) {}
 
-  // ── W-PT1 ─────────────────────────────────────────────────────────────────
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.SITE_MANAGER)
+  @RequirePermission('pointages', 'C')
   @ApiOperation({
     summary: 'Créer un pointage journalier — W-PT1',
     description: `Règles:
@@ -47,8 +46,8 @@ export class PointagesController {
     return this.service.create(user.tenantId, user.sub, user.role, dto);
   }
 
-  // ── List ──────────────────────────────────────────────────────────────────
   @Get()
+  @RequirePermission('pointages', 'R')
   @ApiOperation({ summary: 'Liste des pointages' })
   @ApiQuery({ name: 'datePointage', required: false })
   @ApiQuery({ name: 'operateurId', required: false })
@@ -76,8 +75,8 @@ export class PointagesController {
     });
   }
 
-  // ── Calendrier mensuel ─────────────────────────────────────────────────────
   @Get('calendrier')
+  @RequirePermission('pointages', 'R')
   @ApiOperation({
     summary: "Calendrier mensuel de présence d'un opérateur",
     description: `Retourne tous les jours du mois avec leur statut.
@@ -104,8 +103,8 @@ Le calendrier est TOUJOURS complet (tous les jours du mois présents).`,
     );
   }
 
-  // ── Stats / Dashboard ─────────────────────────────────────────────────────
   @Get('stats')
+  @RequirePermission('pointages', 'R')
   @ApiOperation({ summary: 'Statistiques de présence agrégées' })
   @ApiQuery({ name: 'projetId', required: false })
   @ApiQuery({ name: 'mois', required: false })
@@ -124,16 +123,15 @@ Le calendrier est TOUJOURS complet (tous les jours du mois présents).`,
     );
   }
 
-  // ── Detail ────────────────────────────────────────────────────────────────
   @Get(':id')
+  @RequirePermission('pointages', 'R')
   @ApiOperation({ summary: "Détail d'un pointage" })
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.service.findOne(user.tenantId, id);
   }
 
-  // ── Update ────────────────────────────────────────────────────────────────
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.SITE_MANAGER)
+  @RequirePermission('pointages', 'U')
   @ApiOperation({
     summary: 'Modifier un pointage non validé',
     description:
@@ -152,9 +150,8 @@ Le calendrier est TOUJOURS complet (tous les jours du mois présents).`,
     return this.service.update(user.tenantId, id, user.sub, user.role, dto);
   }
 
-  // ── W-PT2: Validate ───────────────────────────────────────────────────────
   @Patch(':id/valider')
-  @Roles(UserRole.ADMIN, UserRole.SITE_MANAGER)
+  @RequirePermission('pointages', 'U')
   @ApiOperation({
     summary: 'Valider un pointage — W-PT2',
     description:

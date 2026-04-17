@@ -9,6 +9,7 @@ import { InvoicesService } from './invoices.service';
 import { InvoiceFilterDto } from './dto/invoice-filter.dto';
 import { Invoice } from './invoice.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
@@ -20,12 +21,14 @@ export class InvoicesController {
   constructor(private readonly service: InvoicesService) {}
 
   @Get()
+  @RequirePermission('invoices', 'R')
   @ApiOperation({ summary: 'List invoices (paginated + filters)' })
   findAll(@CurrentUser() user: JwtPayload, @Query() filters: InvoiceFilterDto) {
     return this.service.findAll(user.tenantId, filters);
   }
 
   @Get(':id')
+  @RequirePermission('invoices', 'R')
   @ApiOperation({ summary: 'Get invoice detail' })
   @ApiResponse({ status: 200, type: Invoice })
   findOne(
@@ -36,14 +39,12 @@ export class InvoicesController {
   }
 
   @Patch(':id/validate')
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.ACCOUNTANT)
+  @RequirePermission('invoices', 'U')
   @ApiOperation({
     summary: 'Validate invoice — triggers W8',
     description: `Transitions: \`pending_validation\` → \`validated\`.
-
 **Workflow W8:** PDF generation is queued asynchronously (BullMQ — Sprint 5).
 For now \`pdfUrl\` is set to a placeholder and will be replaced when the queue worker runs.
-
 RG19 — invoice status is one-way. No regression allowed.`,
   })
   @ApiResponse({ status: 200, type: Invoice })
@@ -72,6 +73,7 @@ RG19 — invoice status is one-way. No regression allowed.`,
   }
 
   @Get(':id/pdf')
+  @RequirePermission('invoices', 'R')
   @ApiOperation({
     summary: 'Get PDF download URL',
     description:
