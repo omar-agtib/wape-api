@@ -22,9 +22,9 @@ export const envValidationSchema = Joi.object({
   JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d'),
 
   // Redis
-  REDIS_HOST: Joi.string().default('localhost'),
-  REDIS_PORT: Joi.number().default(6379),
-  REDIS_PASSWORD: Joi.string().optional().allow(''),
+  // REDIS_HOST: Joi.string().default('localhost'),
+  // REDIS_PORT: Joi.number().default(6379),
+  // REDIS_PASSWORD: Joi.string().optional().allow(''),
 
   // Throttle
   THROTTLE_TTL: Joi.number().default(60000),

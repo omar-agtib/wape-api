@@ -4,13 +4,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
-import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-ioredis-yet';
+// import { CacheModule } from '@nestjs/cache-manager';
+// import { redisStore } from 'cache-manager-ioredis-yet';
 
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
-import redisConfig from './config/redis.config';
+// import redisConfig from './config/redis.config';
 
 import cloudinaryConfig from './config/cloudinary.config';
 import { CloudinaryModule } from './shared/cloudinary/cloudinary.module';
@@ -85,30 +85,29 @@ import { Plan } from './modules/plans/plan.entity';
 import { PlanVersion } from './modules/plans/plan-version.entity';
 import { envValidationSchema } from './config/env.validation';
 import { PermissionGuard } from './common/guards/permission.guard';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
-    CacheModule.registerAsync({
+    // CacheModule.registerAsync({
+    //   isGlobal: true,
+    //   inject: [ConfigService],
+    //   useFactory: async (config: ConfigService) => ({
+    //     store: await redisStore({
+    //       host: config.get<string>('redis.host') ?? 'localhost',
+    //       port: config.get<number>('redis.port') ?? 6379,
+    //       password: config.get<string>('redis.password') || undefined,
+    //     }),
+    //     ttl: 60 * 15 * 1000, // 15 minutes default
+    //   }),
+    // }),
+    CacheModule.register({
       isGlobal: true,
-      inject: [ConfigService],
-      useFactory: async (config: ConfigService) => ({
-        store: await redisStore({
-          host: config.get<string>('redis.host') ?? 'localhost',
-          port: config.get<number>('redis.port') ?? 6379,
-          password: config.get<string>('redis.password') || undefined,
-        }),
-        ttl: 60 * 15 * 1000, // 15 minutes default
-      }),
+      ttl: 60 * 15 * 1000,
     }),
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [
-        appConfig,
-        databaseConfig,
-        jwtConfig,
-        redisConfig,
-        cloudinaryConfig,
-      ],
+      load: [appConfig, databaseConfig, jwtConfig, cloudinaryConfig],
       envFilePath: '.env',
       validationSchema: envValidationSchema,
       validationOptions: {
