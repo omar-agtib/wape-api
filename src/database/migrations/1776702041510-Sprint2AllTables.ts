@@ -4,69 +4,84 @@ export class Sprint2AllTables1776702041510 implements MigrationInterface {
   name = 'Sprint2AllTables1776702041510';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // ── Safely drop constraints ────────────────────────────────────────────
     await queryRunner.query(
-      `ALTER TABLE "users" DROP CONSTRAINT "users_tenant_id_fkey"`,
+      `ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_tenant_id_fkey"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "personnel" DROP CONSTRAINT "personnel_tenant_id_fkey"`,
+      `ALTER TABLE "personnel" DROP CONSTRAINT IF EXISTS "personnel_tenant_id_fkey"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "projects" DROP CONSTRAINT "projects_tenant_id_fkey"`,
+      `ALTER TABLE "projects" DROP CONSTRAINT IF EXISTS "projects_tenant_id_fkey"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "projects" DROP CONSTRAINT "projects_created_by_fkey"`,
+      `ALTER TABLE "projects" DROP CONSTRAINT IF EXISTS "projects_created_by_fkey"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "project_finance_snapshots" DROP CONSTRAINT "project_finance_snapshots_project_id_fkey"`,
+      `ALTER TABLE "project_finance_snapshots" DROP CONSTRAINT IF EXISTS "project_finance_snapshots_project_id_fkey"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "tasks" DROP CONSTRAINT "tasks_tenant_id_fkey"`,
+      `ALTER TABLE "tasks" DROP CONSTRAINT IF EXISTS "tasks_tenant_id_fkey"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "tasks" DROP CONSTRAINT "tasks_project_id_fkey"`,
+      `ALTER TABLE "tasks" DROP CONSTRAINT IF EXISTS "tasks_project_id_fkey"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "task_personnel" DROP CONSTRAINT "task_personnel_task_id_fkey"`,
+      `ALTER TABLE "task_personnel" DROP CONSTRAINT IF EXISTS "task_personnel_task_id_fkey"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "task_personnel" DROP CONSTRAINT "task_personnel_personnel_id_fkey"`,
+      `ALTER TABLE "task_personnel" DROP CONSTRAINT IF EXISTS "task_personnel_personnel_id_fkey"`,
     );
-    await queryRunner.query(`DROP INDEX "public"."idx_users_tenant"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_personnel_tenant"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_projects_tenant_status"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_tasks_project_status"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_tasks_tenant"`);
-    await queryRunner.query(`DROP INDEX "public"."idx_task_personnel_task"`);
+
+    // ── Safely drop indexes ────────────────────────────────────────────────
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."idx_users_tenant"`);
     await queryRunner.query(
-      `ALTER TABLE "personnel" DROP CONSTRAINT "personnel_cost_per_hour_check"`,
+      `DROP INDEX IF EXISTS "public"."idx_personnel_tenant"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "projects" DROP CONSTRAINT "projects_budget_check"`,
+      `DROP INDEX IF EXISTS "public"."idx_projects_tenant_status"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "projects" DROP CONSTRAINT "projects_check"`,
+      `DROP INDEX IF EXISTS "public"."idx_tasks_project_status"`,
+    );
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."idx_tasks_tenant"`);
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "public"."idx_task_personnel_task"`,
+    );
+
+    // ── Safely drop check constraints ─────────────────────────────────────
+    await queryRunner.query(
+      `ALTER TABLE "personnel" DROP CONSTRAINT IF EXISTS "personnel_cost_per_hour_check"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "projects" DROP CONSTRAINT "projects_progress_check"`,
+      `ALTER TABLE "projects" DROP CONSTRAINT IF EXISTS "projects_budget_check"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "tasks" DROP CONSTRAINT "tasks_check"`,
+      `ALTER TABLE "projects" DROP CONSTRAINT IF EXISTS "projects_check"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "tasks" DROP CONSTRAINT "tasks_progress_check"`,
+      `ALTER TABLE "projects" DROP CONSTRAINT IF EXISTS "projects_progress_check"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "task_personnel" DROP CONSTRAINT "task_personnel_quantity_check"`,
+      `ALTER TABLE "tasks" DROP CONSTRAINT IF EXISTS "tasks_check"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "task_personnel" DROP CONSTRAINT "task_personnel_unit_cost_check"`,
+      `ALTER TABLE "tasks" DROP CONSTRAINT IF EXISTS "tasks_progress_check"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "users" DROP CONSTRAINT "users_tenant_id_email_key"`,
+      `ALTER TABLE "task_personnel" DROP CONSTRAINT IF EXISTS "task_personnel_quantity_check"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "personnel" DROP CONSTRAINT "personnel_tenant_id_email_key"`,
+      `ALTER TABLE "task_personnel" DROP CONSTRAINT IF EXISTS "task_personnel_unit_cost_check"`,
     );
+    await queryRunner.query(
+      `ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_tenant_id_email_key"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "personnel" DROP CONSTRAINT IF EXISTS "personnel_tenant_id_email_key"`,
+    );
+
+    // ── Create tables ──────────────────────────────────────────────────────
     await queryRunner.query(
       `CREATE TABLE "articles" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "tenant_id" uuid NOT NULL, "name" character varying(255) NOT NULL, "category" character varying(100) NOT NULL, "unit" character varying(50), "minimum_stock" integer NOT NULL DEFAULT '0', "unit_price" numeric(10,2) NOT NULL, "currency" character varying(3) NOT NULL DEFAULT 'MAD', "barcode_id" character varying(80) NOT NULL, "barcode_image_url" text, "stock_quantity" numeric(10,2) NOT NULL DEFAULT '0', "reserved_quantity" numeric(10,2) NOT NULL DEFAULT '0', "consumed_quantity" numeric(10,2) NOT NULL DEFAULT '0', CONSTRAINT "UQ_2db9b217fb14c5152322dc21f1d" UNIQUE ("barcode_id"), CONSTRAINT "PK_0a6e2c450d83e0b6052c2793334" PRIMARY KEY ("id"))`,
     );
@@ -232,6 +247,8 @@ export class Sprint2AllTables1776702041510 implements MigrationInterface {
     await queryRunner.query(
       `CREATE TABLE "plan_versions" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "plan_id" uuid NOT NULL, "numero_version" integer NOT NULL, "file_url" text NOT NULL, "file_type" character varying(10) NOT NULL, "commentaire_version" text, "uploaded_by" uuid NOT NULL, CONSTRAINT "PK_dd2f605d45f2679a86a7c1c5b20" PRIMARY KEY ("id"))`,
     );
+
+    // ── Rename old enums to new TypeORM style ──────────────────────────────
     await queryRunner.query(
       `ALTER TYPE "public"."user_role" RENAME TO "user_role_old"`,
     );
@@ -248,6 +265,7 @@ export class Sprint2AllTables1776702041510 implements MigrationInterface {
       `ALTER TABLE "users" ALTER COLUMN "role" SET DEFAULT 'viewer'`,
     );
     await queryRunner.query(`DROP TYPE "public"."user_role_old"`);
+
     await queryRunner.query(
       `ALTER TYPE "public"."project_status" RENAME TO "project_status_old"`,
     );
@@ -264,6 +282,7 @@ export class Sprint2AllTables1776702041510 implements MigrationInterface {
       `ALTER TABLE "projects" ALTER COLUMN "status" SET DEFAULT 'planned'`,
     );
     await queryRunner.query(`DROP TYPE "public"."project_status_old"`);
+
     await queryRunner.query(
       `ALTER TYPE "public"."task_status" RENAME TO "task_status_old"`,
     );
@@ -286,9 +305,12 @@ export class Sprint2AllTables1776702041510 implements MigrationInterface {
       `ALTER TABLE "tasks" ALTER COLUMN "status" SET DEFAULT 'planned'`,
     );
     await queryRunner.query(`DROP TYPE "public"."task_status_old"`);
+
     await queryRunner.query(
       `ALTER TABLE "task_personnel" ALTER COLUMN "total_cost" DROP DEFAULT`,
     );
+
+    // ── Foreign keys ───────────────────────────────────────────────────────
     await queryRunner.query(
       `ALTER TABLE "users" ADD CONSTRAINT "FK_109638590074998bb72a2f2cf08" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
