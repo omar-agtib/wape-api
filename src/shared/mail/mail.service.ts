@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as sgMail from '@sendgrid/mail';
+import sgMail = require('@sendgrid/mail');
 import * as Handlebars from 'handlebars';
 import { readFileSync } from 'fs';
 import { join } from 'path';
