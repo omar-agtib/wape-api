@@ -44,7 +44,7 @@ export class AuthService {
     });
 
     this.logger.log(`New tenant: ${tenant.slug} | admin: ${user.email}`);
-    await this.mailService.sendWelcome(user.email, {
+    void this.mailService.sendWelcome(user.email, {
       fullName: user.fullName,
       companyName: tenant.name,
       email: user.email,
