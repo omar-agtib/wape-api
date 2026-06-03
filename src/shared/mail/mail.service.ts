@@ -1,6 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { MailerService } from '@nestjs-modules/mailer';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as sgMail from '@sendgrid/mail';
+import * as Handlebars from 'handlebars';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 export interface SendMailOptions {
   to: string | string[];
@@ -10,19 +13,47 @@ export interface SendMailOptions {
 }
 
 @Injectable()
-export class MailService {
+export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
   private readonly frontendUrl: string;
   private readonly fromName: string;
+  private readonly fromAddress: string;
 
-  constructor(
-    private readonly mailerService: MailerService,
-    private readonly config: ConfigService,
-  ) {
+  // Compiled template cache (compiled once, reused)
+  private layout!: Handlebars.TemplateDelegate;
+  private readonly templates = new Map<string, Handlebars.TemplateDelegate>();
+  private readonly templatesDir = join(__dirname, 'templates');
+
+  constructor(private readonly config: ConfigService) {
     this.frontendUrl =
       this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:4000';
     this.fromName =
       this.config.get<string>('MAIL_FROM_NAME') ?? 'WAPE Platform';
+    this.fromAddress =
+      this.config.get<string>('MAIL_FROM_ADDRESS') ?? 'noreply@wape.ma';
+  }
+
+  onModuleInit(): void {
+    // Set the SendGrid API key once at startup
+    const apiKey = this.config.get<string>('SENDGRID_API_KEY');
+    if (apiKey) {
+      sgMail.setApiKey(apiKey);
+    } else {
+      this.logger.warn('SENDGRID_API_KEY is not set — emails will not send.');
+    }
+
+    // Compile the base layout once
+    try {
+      const layoutSrc = readFileSync(
+        join(this.templatesDir, 'base.layout.hbs'),
+        'utf8',
+      );
+      this.layout = Handlebars.compile(layoutSrc);
+    } catch (err) {
+      this.logger.error(
+        `Could not load base.layout.hbs from ${this.templatesDir}: ${(err as Error).message}`,
+      );
+    }
   }
 
   // ── Core send method ────────────────────────────────────────────────────────
@@ -33,13 +64,16 @@ export class MailService {
       year: new Date().getFullYear(),
       subject: options.subject,
     };
+    const context = { ...baseContext, ...options.context };
 
     try {
-      await this.mailerService.sendMail({
+      const html = this.render(options.template, context);
+
+      await sgMail.send({
         to: options.to,
+        from: { email: this.fromAddress, name: this.fromName },
         subject: `${options.subject} — WAPE`,
-        template: options.template,
-        context: { ...baseContext, ...options.context },
+        html,
       });
 
       const recipients = Array.isArray(options.to)
@@ -48,11 +82,35 @@ export class MailService {
       this.logger.log(`Email sent [${options.template}] → ${recipients}`);
     } catch (err) {
       // Non-fatal — log and continue, never crash the main flow
+      const message = (err as { response?: { body?: unknown } })?.response?.body
+        ? JSON.stringify((err as { response: { body: unknown } }).response.body)
+        : (err as Error).message;
       this.logger.error(
-        `Failed to send email [${options.template}]: ${(err as Error).message}`,
+        `Failed to send email [${options.template}]: ${message}`,
         (err as Error).stack,
       );
     }
+  }
+
+  // ── Template rendering (body injected into base layout) ──────────────────────
+
+  private render(
+    templateName: string,
+    context: Record<string, unknown>,
+  ): string {
+    const bodyTemplate = this.getTemplate(templateName);
+    const body = bodyTemplate(context);
+    return this.layout({ ...context, body });
+  }
+
+  private getTemplate(name: string): Handlebars.TemplateDelegate {
+    const cached = this.templates.get(name);
+    if (cached) return cached;
+
+    const src = readFileSync(join(this.templatesDir, `${name}.hbs`), 'utf8');
+    const compiled = Handlebars.compile(src);
+    this.templates.set(name, compiled);
+    return compiled;
   }
 
   // ── Welcome ─────────────────────────────────────────────────────────────────
