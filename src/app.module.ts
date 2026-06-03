@@ -167,7 +167,7 @@ import { CacheModule } from '@nestjs/cache-manager';
           Plan,
           PlanVersion,
         ],
-        synchronize: config.get<string>('app.nodeEnv') === 'development',
+        synchronize: false,
         logging: config.get<string>('app.nodeEnv') === 'development',
       }),
     }),
