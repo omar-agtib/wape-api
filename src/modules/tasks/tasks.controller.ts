@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { ListTasksQueryDto } from './dto/list-tasks-query.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { ChangeTaskStatusDto } from './dto/task-status.dto';
 import {
@@ -52,21 +53,22 @@ export class TasksController {
   @Get()
   @RequirePermission('tasks', 'R')
   @ApiOperation({ summary: 'List tasks (paginated)' })
-  @ApiQuery({ name: 'projectId', required: false })
-  @ApiQuery({ name: 'status', required: false, enum: TaskStatus })
-  @ApiQuery({ name: 'search', required: false })
-  findAll(
-    @CurrentUser() user: JwtPayload,
-    @Query() pagination: PaginationDto,
-    @Query('projectId') projectId?: string,
-    @Query('status') status?: TaskStatus,
-    @Query('search') search?: string,
-  ) {
-    return this.service.findAll(user.tenantId, pagination, {
+  findAll(@CurrentUser() user: JwtPayload, @Query() query: ListTasksQueryDto) {
+    const {
+      page,
+      limit,
       projectId,
       status,
       search,
-    });
+      personnelId,
+      toolId,
+      articleId,
+    } = query;
+    return this.service.findAll(
+      user.tenantId,
+      { page, limit },
+      { projectId, status, search, personnelId, toolId, articleId },
+    );
   }
 
   @Get(':id')

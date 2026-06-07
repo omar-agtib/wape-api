@@ -85,7 +85,14 @@ export class TasksService {
   async findAll(
     tenantId: string,
     pagination: PaginationDto,
-    filters: { projectId?: string; status?: TaskStatus; search?: string },
+    filters: {
+      projectId?: string;
+      status?: TaskStatus;
+      search?: string;
+      personnelId?: string;
+      toolId?: string;
+      articleId?: string;
+    },
   ): Promise<PaginatedResult<Task>> {
     const { page = 1, limit = 20 } = pagination;
     const qb = this.taskRepo
@@ -99,6 +106,25 @@ export class TasksService {
       qb.andWhere('t.status = :status', { status: filters.status });
     if (filters.search)
       qb.andWhere('t.name ILIKE :s', { s: `%${filters.search}%` });
+
+    if (filters.personnelId) {
+      qb.andWhere(
+        `EXISTS (SELECT 1 FROM task_personnel tp WHERE tp.task_id = t.id AND tp.personnel_id = :personnelId)`,
+        { personnelId: filters.personnelId },
+      );
+    }
+    if (filters.toolId) {
+      qb.andWhere(
+        `EXISTS (SELECT 1 FROM task_tools tt WHERE tt.task_id = t.id AND tt.tool_id = :toolId)`,
+        { toolId: filters.toolId },
+      );
+    }
+    if (filters.articleId) {
+      qb.andWhere(
+        `EXISTS (SELECT 1 FROM task_articles ta WHERE ta.task_id = t.id AND ta.article_id = :articleId)`,
+        { articleId: filters.articleId },
+      );
+    }
 
     qb.orderBy('t.start_date', 'ASC')
       .skip((page - 1) * limit)
