@@ -21,12 +21,25 @@ export class CreateProjectDto {
 
   @ApiPropertyOptional({
     example: 'uuid-of-client-contact',
-    description:
-      'Client contact ID (must be contact_type=client). Validated in Sprint 3.',
+    description: 'Client contact ID (must be contact_type=client).',
   })
   @IsOptional()
   @IsUUID()
   clientId?: string;
+
+  @ApiPropertyOptional({ example: 'Rabat', description: 'Project location' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  location?: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid-of-user',
+    description: 'Manager user ID (references users)',
+  })
+  @IsOptional()
+  @IsUUID()
+  managerId?: string;
 
   @ApiProperty({
     example: 2500000.0,

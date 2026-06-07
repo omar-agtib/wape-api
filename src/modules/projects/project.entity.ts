@@ -18,6 +18,14 @@ export class Project extends SoftDeleteEntity {
   @Column({ type: 'uuid', name: 'client_id', nullable: true })
   clientId?: string;
 
+  @ApiPropertyOptional({ example: 'Rabat' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  location?: string;
+
+  @ApiPropertyOptional({ description: 'Manager user ID (references users)' })
+  @Column({ type: 'uuid', name: 'manager_id', nullable: true })
+  managerId?: string;
+
   @ApiPropertyOptional()
   @Column({ type: 'text', nullable: true })
   description?: string;
