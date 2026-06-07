@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
+  IsEnum,
   IsIn,
   IsNotEmpty,
   IsNumber,
@@ -10,7 +11,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { SUPPORTED_CURRENCIES } from '../../../common/enums';
+import { SUPPORTED_CURRENCIES, TaskPriority } from '../../../common/enums';
 
 export class CreateTaskDto {
   @ApiProperty({ example: 'Fondations Bloc A' })
@@ -22,6 +23,21 @@ export class CreateTaskDto {
   @ApiProperty({ example: 'uuid-of-project' })
   @IsUUID()
   projectId: string;
+
+  @ApiPropertyOptional({ example: 'Bloc A', description: 'Zone / area' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  zone?: string;
+
+  @ApiPropertyOptional({
+    enum: TaskPriority,
+    example: TaskPriority.MEDIUM,
+    description: 'Defaults to medium if omitted',
+  })
+  @IsOptional()
+  @IsEnum(TaskPriority)
+  priority?: TaskPriority;
 
   @ApiProperty({ example: '2026-04-01' })
   @IsDateString()

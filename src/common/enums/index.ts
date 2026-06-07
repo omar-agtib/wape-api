@@ -10,6 +10,12 @@ export enum TaskStatus {
   COMPLETED = 'completed',
 }
 
+export enum TaskPriority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+}
+
 export enum ToolStatus {
   AVAILABLE = 'available',
   IN_USE = 'in_use',
