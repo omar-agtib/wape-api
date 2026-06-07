@@ -14,7 +14,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -31,9 +30,7 @@ import {
 } from './dto/task-resource.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
-import { TaskStatus } from '../../common/enums';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
-import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('tasks')
 @ApiBearerAuth('JWT')
