@@ -20,6 +20,16 @@ import {
   PaginatedResult,
 } from '../../common/dto/pagination.dto';
 
+export interface RecentMovementRow {
+  id: string;
+  movementType: string;
+  movementDate: Date;
+  notes: string | null;
+  toolName: string;
+  responsibleName: string | null;
+  projectName: string | null;
+}
+
 @Injectable()
 export class ToolsService {
   constructor(
@@ -139,8 +149,11 @@ export class ToolsService {
     });
   }
 
-  async getRecentMovements(tenantId: string, limit = 20) {
-    const rows = await this.movementRepo
+  async getRecentMovements(
+    tenantId: string,
+    limit = 20,
+  ): Promise<RecentMovementRow[]> {
+    const rows: RecentMovementRow[] = await this.movementRepo
       .createQueryBuilder('m')
       .innerJoin('tools', 't', 't.id = m.tool_id')
       .leftJoin('personnel', 'p', 'p.id = m.responsible_id')
@@ -157,10 +170,9 @@ export class ToolsService {
       ])
       .orderBy('m.movement_date', 'DESC')
       .limit(limit)
-      .getRawMany();
+      .getRawMany<RecentMovementRow>();
     return rows;
   }
-
   // ── Internal: used by W1/W2 ─────────────────────────────────────────────────
 
   async autoOut(
