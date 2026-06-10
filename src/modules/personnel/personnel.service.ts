@@ -44,7 +44,7 @@ export class PersonnelService {
   async findAll(
     tenantId: string,
     pagination: PaginationDto,
-    filters: { role?: string; search?: string },
+    filters: { role?: string; search?: string; status?: string },
   ): Promise<PaginatedResult<Personnel>> {
     const { page = 1, limit = 20 } = pagination;
 
@@ -60,6 +60,9 @@ export class PersonnelService {
       qb.andWhere('(p.full_name ILIKE :search OR p.email ILIKE :search)', {
         search: `%${filters.search}%`,
       });
+    }
+    if (filters.status) {
+      qb.andWhere('p.status = :status', { status: filters.status });
     }
 
     qb.orderBy('p.full_name', 'ASC')

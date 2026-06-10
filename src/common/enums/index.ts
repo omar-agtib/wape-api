@@ -16,6 +16,20 @@ export enum TaskPriority {
   HIGH = 'high',
 }
 
+export enum PersonnelStatus {
+  ACTIVE = 'active',
+  ON_LEAVE = 'on_leave',
+  INACTIVE = 'inactive',
+}
+
+export enum ContractType {
+  CDI = 'cdi',
+  CDD = 'cdd',
+  TEMPORARY = 'temporary',
+  INTERNSHIP = 'internship',
+  FREELANCE = 'freelance',
+}
+
 export enum ToolStatus {
   AVAILABLE = 'available',
   IN_USE = 'in_use',

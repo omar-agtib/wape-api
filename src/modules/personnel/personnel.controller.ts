@@ -50,14 +50,19 @@ export class PersonnelController {
     required: false,
     description: 'Search by name or email',
   })
-  @ApiResponse({ status: 200 })
+  @ApiQuery({ name: 'status', required: false })
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query() pagination: PaginationDto,
     @Query('role') role?: string,
     @Query('search') search?: string,
+    @Query('status') status?: string,
   ) {
-    return this.service.findAll(user.tenantId, pagination, { role, search });
+    return this.service.findAll(user.tenantId, pagination, {
+      role,
+      search,
+      status,
+    });
   }
 
   @Get(':id')
