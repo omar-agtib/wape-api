@@ -31,6 +31,10 @@ export class ToolMovement extends BaseEntity {
   @Column({ type: 'uuid', name: 'task_id', nullable: true })
   taskId?: string;
 
+  @ApiPropertyOptional({ description: 'Project this movement relates to' })
+  @Column({ type: 'uuid', name: 'project_id', nullable: true })
+  projectId?: string;
+
   @ApiProperty({
     description: 'TRUE if triggered automatically by a task status change',
   })

@@ -113,8 +113,9 @@ export class ToolsService {
       toolId,
       movementType: dto.movementType,
       responsibleId: dto.responsibleId,
+      projectId: dto.projectId,
       notes: dto.notes,
-      movementDate: new Date(),
+      movementDate: dto.movementDate ? new Date(dto.movementDate) : new Date(),
       isAuto,
       taskId,
     });
@@ -136,6 +137,28 @@ export class ToolsService {
       where: { toolId },
       order: { movementDate: 'DESC' },
     });
+  }
+
+  async getRecentMovements(tenantId: string, limit = 20) {
+    const rows = await this.movementRepo
+      .createQueryBuilder('m')
+      .innerJoin('tools', 't', 't.id = m.tool_id')
+      .leftJoin('personnel', 'p', 'p.id = m.responsible_id')
+      .leftJoin('projects', 'proj', 'proj.id = m.project_id')
+      .where('t.tenant_id = :tenantId', { tenantId })
+      .select([
+        'm.id AS id',
+        'm.movement_type AS "movementType"',
+        'm.movement_date AS "movementDate"',
+        'm.notes AS notes',
+        't.name AS "toolName"',
+        'p.full_name AS "responsibleName"',
+        'proj.name AS "projectName"',
+      ])
+      .orderBy('m.movement_date', 'DESC')
+      .limit(limit)
+      .getRawMany();
+    return rows;
   }
 
   // ── Internal: used by W1/W2 ─────────────────────────────────────────────────

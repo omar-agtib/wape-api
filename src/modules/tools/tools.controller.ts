@@ -64,6 +64,15 @@ export class ToolsController {
     });
   }
 
+  @Get('movements/recent')
+  @RequirePermission('tools', 'R')
+  @ApiOperation({
+    summary: 'Recent tool movements across all tools (tenant-wide)',
+  })
+  getRecentMovements(@CurrentUser() user: JwtPayload) {
+    return this.service.getRecentMovements(user.tenantId, 20);
+  }
+
   @Get(':id')
   @RequirePermission('tools', 'R')
   @ApiOperation({ summary: 'Get tool detail' })

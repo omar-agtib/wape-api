@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export enum MovementDirection {
   IN = 'IN',
@@ -18,6 +24,19 @@ export class CreateToolMovementDto {
   @ApiProperty({ example: 'uuid-of-responsible-personnel' })
   @IsUUID()
   responsibleId: string;
+
+  @ApiPropertyOptional({ description: 'Project this movement relates to' })
+  @IsOptional()
+  @IsUUID()
+  projectId?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-04-16',
+    description: 'Movement date — defaults to now if omitted',
+  })
+  @IsOptional()
+  @IsDateString()
+  movementDate?: string;
 
   @ApiPropertyOptional({ example: 'Deployed to site Bloc A' })
   @IsOptional()
