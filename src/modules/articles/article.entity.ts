@@ -21,6 +21,14 @@ export class Article extends SoftDeleteEntity {
   @Column({ type: 'varchar', length: 50, nullable: true })
   unit?: string;
 
+  @ApiPropertyOptional({ example: 'Warehouse A - Shelf 3' })
+  @Column({ type: 'varchar', length: 255, name: 'storage_location', nullable: true })
+  storageLocation?: string;
+
+  @ApiPropertyOptional()
+  @Column({ type: 'text', nullable: true })
+  description?: string;
+
   @ApiPropertyOptional({
     example: 50,
     description:

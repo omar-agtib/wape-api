@@ -53,4 +53,15 @@ export class CreateArticleDto {
   @IsString()
   @MaxLength(50)
   unit?: string;
+
+  @ApiPropertyOptional({ example: 'Warehouse A - Shelf 3' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  storageLocation?: string;
+
+  @ApiPropertyOptional({ example: 'High-grade cement for foundations' })
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
