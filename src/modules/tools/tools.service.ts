@@ -35,7 +35,7 @@ export class ToolsService {
     const tool = this.toolRepo.create({
       ...dto,
       tenantId,
-      status: ToolStatus.AVAILABLE,
+      status: dto.status ?? ToolStatus.AVAILABLE,
     });
     return this.toolRepo.save(tool);
   }
@@ -178,13 +178,18 @@ export class ToolsService {
 
   private validateMovement(tool: Tool, direction: MovementDirection): void {
     // RG16 — retired tools can never move OUT
+    // RG16 — retired OR maintenance tools can never move OUT
     if (
-      tool.status === ToolStatus.RETIRED &&
-      direction === MovementDirection.OUT
+      direction === MovementDirection.OUT &&
+      (tool.status === ToolStatus.RETIRED ||
+        tool.status === ToolStatus.MAINTENANCE)
     ) {
       throw new UnprocessableEntityException({
-        error: 'TOOL_RETIRED',
-        message: `Tool '${tool.name}' is retired and cannot be deployed`,
+        error:
+          tool.status === ToolStatus.RETIRED
+            ? 'TOOL_RETIRED'
+            : 'TOOL_IN_MAINTENANCE',
+        message: `Tool '${tool.name}' is ${tool.status} and cannot be deployed`,
       });
     }
     // RG11 — OUT requires available
