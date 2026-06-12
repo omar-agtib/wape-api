@@ -1,10 +1,11 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Unique } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SoftDeleteEntity } from '../../common/entities/base.entity';
 import { PurchaseOrderStatus } from '../../common/enums';
 import { DecimalTransformer } from '../../common/transformers/decimal.transformer';
 
 @Entity('purchase_orders')
+@Unique('UQ_po_tenant_order_number', ['tenantId', 'orderNumber'])
 export class PurchaseOrder extends SoftDeleteEntity {
   @ApiProperty()
   @Column({ type: 'uuid', name: 'tenant_id' })
@@ -14,7 +15,7 @@ export class PurchaseOrder extends SoftDeleteEntity {
     example: 'BC-2026-0001',
     description: 'Auto-generated (BC-YYYY-NNNN)',
   })
-  @Column({ type: 'varchar', length: 20, name: 'order_number', unique: true })
+  @Column({ type: 'varchar', length: 20, name: 'order_number' })
   orderNumber: string;
 
   @ApiProperty({ description: 'Must be contact_type=supplier (RG08)' })
