@@ -54,6 +54,7 @@ export enum PurchaseOrderStatus {
   CONFIRMED = 'confirmed',
   PARTIAL = 'partial',
   COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
 }
 
 export enum ReceptionStatus {

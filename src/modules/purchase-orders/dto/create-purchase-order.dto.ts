@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsDateString,
   IsIn,
   IsNumber,
   IsOptional,
@@ -47,6 +48,19 @@ export class CreatePurchaseOrderDto {
   @IsOptional()
   @IsUUID()
   projectId?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-12', description: 'Order date' })
+  @IsOptional()
+  @IsDateString()
+  orderDate?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-06-20',
+    description: 'Expected delivery date',
+  })
+  @IsOptional()
+  @IsDateString()
+  expectedDelivery?: string;
 
   @ApiProperty({ example: 'MAD', enum: ['MAD', 'USD', 'EUR', 'GBP'] })
   @IsIn(SUPPORTED_CURRENCIES)

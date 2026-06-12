@@ -29,6 +29,10 @@ export class PurchaseOrder extends SoftDeleteEntity {
   @Column({ type: 'timestamptz', name: 'order_date', default: () => 'NOW()' })
   orderDate: Date;
 
+  @ApiPropertyOptional({ description: 'Expected delivery date' })
+  @Column({ type: 'date', name: 'expected_delivery', nullable: true })
+  expectedDelivery?: string;
+
   @ApiProperty({ enum: PurchaseOrderStatus })
   @Column({
     type: 'enum',

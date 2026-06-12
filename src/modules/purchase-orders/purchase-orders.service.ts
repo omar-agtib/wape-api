@@ -15,6 +15,22 @@ import { PoFilterDto } from './dto/po-filter.dto';
 import { PurchaseOrderStatus, ContactType } from '../../common/enums';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
 
+export interface PurchaseOrderRow {
+  id: string;
+  orderNumber: string;
+  supplierId: string | null;
+  supplierName: string | null;
+  projectId: string | null;
+  projectName: string | null;
+  status: string;
+  currency: string;
+  totalAmount: number;
+  orderDate: Date;
+  expectedDelivery: string | null;
+  notes: string | null;
+  lineCount: string;
+}
+
 @Injectable()
 export class PurchaseOrdersService {
   constructor(
@@ -72,7 +88,8 @@ export class PurchaseOrdersService {
       status: PurchaseOrderStatus.DRAFT,
       totalAmount,
       createdBy: userId,
-      orderDate: new Date(),
+      orderDate: dto.orderDate ? new Date(dto.orderDate) : new Date(),
+      expectedDelivery: dto.expectedDelivery,
     });
 
     const savedPo = await this.poRepo.save(po);
@@ -99,10 +116,12 @@ export class PurchaseOrdersService {
   async findAll(
     tenantId: string,
     filters: PoFilterDto,
-  ): Promise<PaginatedResult<PurchaseOrder>> {
+  ): Promise<PaginatedResult<PurchaseOrderRow>> {
     const { page = 1, limit = 20 } = filters;
     const qb = this.poRepo
       .createQueryBuilder('po')
+      .leftJoin('contacts', 'c', 'c.id = po.supplier_id')
+      .leftJoin('projects', 'proj', 'proj.id = po.project_id')
       .where('po.tenant_id = :tenantId', { tenantId })
       .andWhere('po.deleted_at IS NULL');
 
@@ -117,11 +136,31 @@ export class PurchaseOrdersService {
     if (filters.dateTo)
       qb.andWhere('po.order_date <= :to', { to: filters.dateTo });
 
-    qb.orderBy('po.order_date', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit);
-    const [items, total] = await qb.getManyAndCount();
-    return paginate(items, total, page, limit);
+    qb.select([
+      'po.id AS id',
+      'po.order_number AS "orderNumber"',
+      'po.supplier_id AS "supplierId"',
+      'c.legal_name AS "supplierName"',
+      'po.project_id AS "projectId"',
+      'proj.name AS "projectName"',
+      'po.status AS status',
+      'po.currency AS currency',
+      'po.total_amount AS "totalAmount"',
+      'po.order_date AS "orderDate"',
+      'po.expected_delivery AS "expectedDelivery"',
+      'po.notes AS notes',
+      '(SELECT COUNT(*) FROM purchase_order_lines pol WHERE pol.purchase_order_id = po.id) AS "lineCount"',
+    ])
+      .orderBy('po.order_date', 'DESC')
+      .offset((page - 1) * limit)
+      .limit(limit);
+
+    const [rows, total] = await Promise.all([
+      qb.getRawMany<PurchaseOrderRow>(),
+      qb.getCount(),
+    ]);
+
+    return paginate(rows, total, page, limit);
   }
 
   async findOne(tenantId: string, id: string) {
@@ -175,6 +214,26 @@ export class PurchaseOrdersService {
 
     const updatedPo = await this.findOneRaw(tenantId, id);
     return { purchaseOrder: updatedPo, receptionsCreated: lines.length };
+  }
+
+  async cancel(tenantId: string, id: string): Promise<PurchaseOrder> {
+    const po = await this.findOneRaw(tenantId, id);
+
+    // Only draft or confirmed POs can be cancelled — once receiving has
+    // started (partial/completed) cancelling would corrupt stock/reception data.
+    if (
+      po.status !== PurchaseOrderStatus.DRAFT &&
+      po.status !== PurchaseOrderStatus.CONFIRMED
+    ) {
+      throw new UnprocessableEntityException({
+        error: 'PO_CANNOT_BE_CANCELLED',
+        message: `Purchase order '${po.orderNumber}' cannot be cancelled (status: ${po.status})`,
+        details: { currentStatus: po.status },
+      });
+    }
+
+    await this.poRepo.update(id, { status: PurchaseOrderStatus.CANCELLED });
+    return this.findOneRaw(tenantId, id);
   }
 
   // ── Internal ────────────────────────────────────────────────────────────────

@@ -84,4 +84,16 @@ export class PurchaseOrdersController {
       message: `Purchase order confirmed. ${receptions.length} reception row(s) created.`,
     };
   }
+
+  @Patch(':id/cancel')
+  @RequirePermission('purchase_orders', 'U')
+  @ApiOperation({
+    summary: 'Cancel a purchase order',
+    description: 'Only draft or confirmed orders can be cancelled.',
+  })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 422, description: 'PO_CANNOT_BE_CANCELLED' })
+  cancel(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.service.cancel(user.tenantId, id);
+  }
 }
