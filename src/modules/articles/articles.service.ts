@@ -228,6 +228,11 @@ export class ArticlesService {
     await this.repo.increment({ id }, 'stockQuantity', quantity);
   }
 
+  //   /** Manual OUT movement — decrement physical stock */
+  async removeStock(id: string, quantity: number): Promise<void> {
+    await this.repo.decrement({ id }, 'stockQuantity', quantity);
+  }
+
   private withComputed(
     article: Article,
   ): Article & { availableQuantity: number } {

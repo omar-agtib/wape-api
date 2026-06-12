@@ -1,7 +1,8 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { StockService } from './stock.service';
 import { StockFilterDto } from './dto/stock-filter.dto';
+import { CreateStockMovementDto } from './dto/create-stock-movement.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
@@ -21,5 +22,19 @@ export class StockController {
   })
   findAll(@CurrentUser() user: JwtPayload, @Query() filters: StockFilterDto) {
     return this.service.findAll(user.tenantId, filters);
+  }
+
+  @Post('movements')
+  @RequirePermission('articles_stock', 'C')
+  @ApiOperation({
+    summary: 'Create a manual stock movement (IN or OUT)',
+    description:
+      'Adjusts article stock. IN increments, OUT decrements (guarded against negative). RESERVED is automation-only and rejected here.',
+  })
+  createMovement(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateStockMovementDto,
+  ) {
+    return this.service.createManualMovement(user.tenantId, dto);
   }
 }
