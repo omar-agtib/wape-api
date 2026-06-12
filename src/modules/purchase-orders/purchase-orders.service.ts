@@ -274,14 +274,26 @@ export class PurchaseOrdersService {
 
   private async generateOrderNumber(tenantId: string): Promise<string> {
     const year = new Date().getFullYear();
-    // Count existing POs for this tenant+year to get next sequence
-    const count = await this.poRepo
-      .createQueryBuilder('po')
-      .where('po.tenant_id = :tenantId', { tenantId })
-      .andWhere('EXTRACT(YEAR FROM po.order_date) = :year', { year })
-      .getCount();
+    const prefix = `BC-${year}-`;
 
-    const seq = String(count + 1).padStart(4, '0');
-    return `BC-${year}-${seq}`;
+    // Find the highest existing order_number for this tenant+year.
+    // withDeleted() so soft-deleted rows count too — the UNIQUE constraint
+    // spans all rows, so their numbers must not be reused.
+    const last = await this.poRepo
+      .createQueryBuilder('po')
+      .withDeleted()
+      .where('po.tenant_id = :tenantId', { tenantId })
+      .andWhere('po.order_number LIKE :prefix', { prefix: `${prefix}%` })
+      .orderBy('po.order_number', 'DESC')
+      .getOne();
+
+    let nextSeq = 1;
+    if (last?.orderNumber) {
+      const tail = last.orderNumber.slice(prefix.length);
+      const parsed = parseInt(tail, 10);
+      if (!Number.isNaN(parsed)) nextSeq = parsed + 1;
+    }
+
+    return `${prefix}${String(nextSeq).padStart(4, '0')}`;
   }
 }
