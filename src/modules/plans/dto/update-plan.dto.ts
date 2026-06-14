@@ -14,6 +14,11 @@ export class UpdatePlanDto {
   @IsString()
   description?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  author?: string;
+
   @ApiPropertyOptional({ enum: PlanCategorie })
   @IsOptional()
   @IsEnum(PlanCategorie)

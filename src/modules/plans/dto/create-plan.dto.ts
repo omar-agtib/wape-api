@@ -32,6 +32,11 @@ export class CreatePlanDto {
   @IsString()
   description?: string;
 
+  @ApiPropertyOptional({ example: 'Kaoutar' })
+  @IsOptional()
+  @IsString()
+  author?: string;
+
   @ApiProperty({ enum: PlanCategorie })
   @IsEnum(PlanCategorie)
   categorie: PlanCategorie;

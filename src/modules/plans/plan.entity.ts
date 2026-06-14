@@ -25,6 +25,13 @@ export class Plan extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
+  @ApiPropertyOptional({
+    example: 'Kaoutar',
+    description: 'Auteur / dessinateur du plan (texte libre)',
+  })
+  @Column({ type: 'text', nullable: true })
+  author?: string;
+
   @ApiProperty({ enum: PlanCategorie })
   @Column({
     type: 'enum',
