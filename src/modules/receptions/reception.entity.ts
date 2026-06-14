@@ -29,7 +29,9 @@ export class Reception extends BaseEntity {
   @Column({ type: 'uuid', name: 'supplier_id', nullable: true })
   supplierId?: string;
 
-  @ApiPropertyOptional({ description: 'Free-text supplier when not a known record' })
+  @ApiPropertyOptional({
+    description: 'Free-text supplier when not a known record',
+  })
   @Column({ type: 'text', name: 'supplier_name', nullable: true })
   supplierName?: string;
 
@@ -92,11 +94,15 @@ export class Reception extends BaseEntity {
   @Column({ type: 'timestamptz', name: 'received_at', nullable: true })
   receivedAt?: Date;
 
-  @ApiPropertyOptional({ description: 'Personnel UUID when a known person is selected' })
+  @ApiPropertyOptional({
+    description: 'Personnel UUID when a known person is selected',
+  })
   @Column({ type: 'uuid', name: 'received_by', nullable: true })
   receivedBy?: string;
 
-  @ApiPropertyOptional({ description: 'Free-text receiver name (matches the design)' })
+  @ApiPropertyOptional({
+    description: 'Free-text receiver name (matches the design)',
+  })
   @Column({ type: 'text', name: 'received_by_name', nullable: true })
   receivedByName?: string;
 

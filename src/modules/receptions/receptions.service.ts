@@ -179,7 +179,6 @@ export class ReceptionsService {
     tenantId: string,
     receptionId: string,
     dto: ReceiveDto,
-    userId: string,
   ): Promise<{
     reception: Reception;
     newReception?: Reception;

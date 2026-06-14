@@ -75,6 +75,6 @@ All steps run in a single DB transaction.`,
     @Param('id') id: string,
     @Body() dto: ReceiveDto,
   ) {
-    return this.service.receive(user.tenantId, id, dto, user.sub);
+    return this.service.receive(user.tenantId, id, dto);
   }
 }
