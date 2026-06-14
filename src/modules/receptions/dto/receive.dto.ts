@@ -11,6 +11,16 @@ export class ReceiveDto {
   receivedQuantity: number;
 
   @ApiPropertyOptional({
+    example: 0,
+    description:
+      'Quantity rejected on receipt — recorded for audit, not added to stock',
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  rejectedQuantity?: number;
+
+  @ApiPropertyOptional({
     example: 'Partial delivery — rest expected next week',
   })
   @IsOptional()
@@ -24,4 +34,9 @@ export class ReceiveDto {
   @IsOptional()
   @IsString()
   receivedBy?: string;
+
+  @ApiPropertyOptional({ description: 'Free-text receiver name' })
+  @IsOptional()
+  @IsString()
+  receivedByName?: string;
 }

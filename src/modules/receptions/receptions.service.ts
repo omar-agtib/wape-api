@@ -11,6 +11,7 @@ import { Article } from '../articles/article.entity';
 import { StockService } from '../stock/stock.service';
 import { PurchaseOrdersService } from '../purchase-orders/purchase-orders.service';
 import { ReceiveDto } from './dto/receive.dto';
+import { CreateReceptionDto } from './dto/create-reception.dto';
 import { ReceptionFilterDto } from './dto/reception-filter.dto';
 import {
   PurchaseOrderStatus,
@@ -37,18 +38,108 @@ export class ReceptionsService {
   async createFromPo(
     poId: string,
     lines: PurchaseOrderLine[],
+    tenantId: string,
+    projectId?: string,
+    supplierId?: string,
   ): Promise<Reception[]> {
     const receptions = lines.map((line) =>
       this.repo.create({
+        tenantId,
         purchaseOrderId: poId,
         purchaseOrderLineId: line.id,
         articleId: line.articleId,
         expectedQuantity: line.orderedQuantity,
         receivedQuantity: 0,
+        rejectedQuantity: 0,
         status: ReceptionStatus.PENDING,
+        projectId,
+        supplierId,
       }),
     );
     return this.repo.save(receptions);
+  }
+
+  // ── Manual create (New Reception button) ─────────────────────────────────────
+  async create(
+    tenantId: string,
+    dto: CreateReceptionDto,
+  ): Promise<Reception[]> {
+    // If linked to a PO, validate it belongs to this tenant and auto-fill from it.
+    if (dto.purchaseOrderId) {
+      const po = await this.poService.findOneRaw(tenantId, dto.purchaseOrderId);
+
+      // Pull the PO lines and create one reception row per line (W5-style),
+      // carrying the manual header fields (supplier/project/date/receiver).
+      const poLines = await this.lineRepo.find({
+        where: { purchaseOrderId: po.id },
+      });
+
+      if (poLines.length === 0) {
+        throw new UnprocessableEntityException({
+          error: 'PO_HAS_NO_LINES',
+          message: 'The selected purchase order has no lines to receive',
+        });
+      }
+
+      const rows = poLines.map((line) =>
+        this.repo.create({
+          tenantId,
+          purchaseOrderId: po.id,
+          purchaseOrderLineId: line.id,
+          articleId: line.articleId,
+          expectedQuantity: line.orderedQuantity,
+          receivedQuantity: 0,
+          rejectedQuantity: 0,
+          status: ReceptionStatus.PENDING,
+          supplierId: dto.supplierId ?? po.supplierId,
+          supplierName: dto.supplierName,
+          projectId: dto.projectId ?? po.projectId,
+          deliveryDate: dto.deliveryDate,
+          receivedBy: dto.receivedBy,
+          receivedByName: dto.receivedByName,
+          notes: dto.notes,
+        }),
+      );
+      return this.repo.save(rows);
+    }
+
+    // No PO — manual reception. Either explicit lines, or a header-only row.
+    if (dto.lines && dto.lines.length > 0) {
+      const rows = dto.lines.map((line) =>
+        this.repo.create({
+          tenantId,
+          articleId: line.articleId,
+          expectedQuantity: line.expectedQuantity,
+          receivedQuantity: 0,
+          rejectedQuantity: 0,
+          status: ReceptionStatus.PENDING,
+          supplierId: dto.supplierId,
+          supplierName: dto.supplierName,
+          projectId: dto.projectId,
+          deliveryDate: dto.deliveryDate,
+          receivedBy: dto.receivedBy,
+          receivedByName: dto.receivedByName,
+          notes: dto.notes,
+        }),
+      );
+      return this.repo.save(rows);
+    }
+
+    // Header-only reception (no PO, no lines) — matches the empty New Reception form.
+    const header = this.repo.create({
+      tenantId,
+      receivedQuantity: 0,
+      rejectedQuantity: 0,
+      status: ReceptionStatus.PENDING,
+      supplierId: dto.supplierId,
+      supplierName: dto.supplierName,
+      projectId: dto.projectId,
+      deliveryDate: dto.deliveryDate,
+      receivedBy: dto.receivedBy,
+      receivedByName: dto.receivedByName,
+      notes: dto.notes,
+    });
+    return [await this.repo.save(header)];
   }
 
   // ── List ─────────────────────────────────────────────────────────────────────
@@ -58,23 +149,10 @@ export class ReceptionsService {
   ): Promise<PaginatedResult<Reception>> {
     const { page = 1, limit = 20 } = filters;
 
-    // Get all PO ids that belong to this tenant first, then filter receptions
-    const tenantPoIds = await this.lineRepo.manager
-      .createQueryBuilder()
-      .select('po.id')
-      .from('purchase_orders', 'po')
-      .where('po.tenant_id = :tenantId', { tenantId })
-      .getRawMany();
-
-    const poIds = tenantPoIds.map((r: { po_id: string }) => r.po_id);
-
-    if (poIds.length === 0) {
-      return paginate([], 0, page, limit);
-    }
-
+    // Now that receptions carry tenant_id directly, scope on it.
     const qb = this.repo
       .createQueryBuilder('r')
-      .where('r.purchase_order_id IN (:...poIds)', { poIds });
+      .where('r.tenant_id = :tenantId', { tenantId });
 
     if (filters.purchaseOrderId) {
       qb.andWhere('r.purchase_order_id = :poId', {
@@ -116,11 +194,28 @@ export class ReceptionsService {
       });
     }
 
+    // Guard: only PO-derived lines (with article + expected qty) are receivable
+    // through this per-line path. Header-only manual receptions are not.
+    if (
+      !reception.purchaseOrderId ||
+      !reception.purchaseOrderLineId ||
+      !reception.articleId ||
+      reception.expectedQuantity == null
+    ) {
+      throw new UnprocessableEntityException({
+        error: 'RECEPTION_NOT_RECEIVABLE',
+        message: 'This reception has no purchase-order line to receive against',
+      });
+    }
+
+    // After the guard, these are guaranteed defined.
+    const purchaseOrderId = reception.purchaseOrderId;
+    const purchaseOrderLineId = reception.purchaseOrderLineId;
+    const articleId = reception.articleId;
+    const expectedQuantity = reception.expectedQuantity;
+
     // RG20 — check PO is not completed
-    const po = await this.poService.findOneRaw(
-      tenantId,
-      reception.purchaseOrderId,
-    );
+    const po = await this.poService.findOneRaw(tenantId, purchaseOrderId);
     if (po.status === PurchaseOrderStatus.COMPLETED) {
       throw new UnprocessableEntityException({
         error: 'PO_COMPLETED',
@@ -128,20 +223,25 @@ export class ReceptionsService {
       });
     }
 
-    // RG04 — received_qty cannot exceed remaining
+    // RG04 — received_qty + rejected_qty cannot exceed remaining
+    const rejectedNow = dto.rejectedQuantity ?? 0;
     const alreadyReceived = reception.receivedQuantity;
-    const remaining = reception.expectedQuantity - alreadyReceived;
+    const alreadyRejected = reception.rejectedQuantity;
+    const remaining = expectedQuantity - alreadyReceived - alreadyRejected;
+    const consumed = dto.receivedQuantity + rejectedNow;
 
-    if (dto.receivedQuantity > remaining) {
+    if (consumed > remaining) {
       throw new UnprocessableEntityException({
         error: 'QUANTITY_EXCEEDS_REMAINING',
-        message: `Cannot receive ${dto.receivedQuantity} — only ${remaining} remaining for this line`,
+        message: `Cannot process ${consumed} (received ${dto.receivedQuantity} + rejected ${rejectedNow}) — only ${remaining} remaining for this line`,
         field: 'receivedQuantity',
         details: {
-          expected: reception.expectedQuantity,
+          expected: expectedQuantity,
           alreadyReceived,
+          alreadyRejected,
           remaining,
-          requested: dto.receivedQuantity,
+          requestedReceived: dto.receivedQuantity,
+          requestedRejected: rejectedNow,
         },
       });
     }
@@ -153,48 +253,60 @@ export class ReceptionsService {
     let newReception: Reception | undefined;
 
     try {
-      const isFullyReceived = dto.receivedQuantity >= remaining;
+      // The line is fully resolved when received + rejected covers the remainder.
+      const isFullyResolved = consumed >= remaining;
 
-      // Update current reception
       reception.receivedQuantity = alreadyReceived + dto.receivedQuantity;
-      reception.status = isFullyReceived
+      reception.rejectedQuantity = alreadyRejected + rejectedNow;
+      reception.status = isFullyResolved
         ? ReceptionStatus.COMPLETED
         : ReceptionStatus.PARTIAL;
       reception.receivedAt = new Date();
-      reception.receivedBy = dto.receivedBy ?? userId;
+      if (dto.receivedBy) reception.receivedBy = dto.receivedBy;
+      if (dto.receivedByName) reception.receivedByName = dto.receivedByName;
+      if (!reception.deliveryDate)
+        reception.deliveryDate = new Date().toISOString().slice(0, 10);
       if (dto.notes) reception.notes = dto.notes;
       await queryRunner.manager.save(Reception, reception);
 
-      // If partial, create a new reception row for the remainder
-      if (!isFullyReceived) {
+      // If still open, create a new pending row for the remainder.
+      if (!isFullyResolved) {
         const remainder =
-          reception.expectedQuantity - reception.receivedQuantity;
+          expectedQuantity -
+          reception.receivedQuantity -
+          reception.rejectedQuantity;
         newReception = queryRunner.manager.create(Reception, {
-          purchaseOrderId: reception.purchaseOrderId,
-          purchaseOrderLineId: reception.purchaseOrderLineId,
-          articleId: reception.articleId,
+          tenantId,
+          purchaseOrderId,
+          purchaseOrderLineId,
+          articleId,
           expectedQuantity: remainder,
           receivedQuantity: 0,
+          rejectedQuantity: 0,
           status: ReceptionStatus.PENDING,
+          supplierId: reception.supplierId,
+          projectId: reception.projectId,
         });
         await queryRunner.manager.save(Reception, newReception);
       }
 
-      // Update PO line received_quantity
+      // Update PO line received_quantity (rejected does NOT count as received)
       await queryRunner.manager.increment(
         PurchaseOrderLine,
-        { id: reception.purchaseOrderLineId },
+        { id: purchaseOrderLineId },
         'receivedQuantity',
         dto.receivedQuantity,
       );
 
-      // Add stock to article (W6 — incoming movement)
-      await queryRunner.manager.increment(
-        Article,
-        { id: reception.articleId },
-        'stockQuantity',
-        dto.receivedQuantity,
-      );
+      // Add only the received quantity to article stock (rejected is excluded)
+      if (dto.receivedQuantity > 0) {
+        await queryRunner.manager.increment(
+          Article,
+          { id: articleId },
+          'stockQuantity',
+          dto.receivedQuantity,
+        );
+      }
 
       await queryRunner.commitTransaction();
     } catch (err) {
@@ -204,20 +316,22 @@ export class ReceptionsService {
       await queryRunner.release();
     }
 
-    // Record stock movement (outside transaction is fine — audit log)
-    await this.stockService.createMovement({
-      tenantId,
-      articleId: reception.articleId,
-      movementType: StockMovementType.INCOMING,
-      quantity: dto.receivedQuantity,
-      purchaseOrderId: reception.purchaseOrderId,
-    });
+    // Record stock movement (audit log) — only for received goods
+    if (dto.receivedQuantity > 0) {
+      await this.stockService.createMovement({
+        tenantId,
+        articleId,
+        movementType: StockMovementType.INCOMING,
+        quantity: dto.receivedQuantity,
+        purchaseOrderId,
+      });
+    }
 
-    // Evaluate and update PO status (completed / partial / confirmed)
-    await this.poService.evaluatePoStatus(tenantId, reception.purchaseOrderId);
+    // Re-evaluate PO status (completed / partial / confirmed)
+    await this.poService.evaluatePoStatus(tenantId, purchaseOrderId);
     const updatedPo = await this.poService.findOneRaw(
       tenantId,
-      reception.purchaseOrderId,
+      purchaseOrderId,
     );
 
     return {
@@ -233,16 +347,12 @@ export class ReceptionsService {
     tenantId: string,
     receptionId: string,
   ): Promise<Reception> {
-    // Join through purchase_orders to enforce tenant isolation
     const reception = await this.repo
       .createQueryBuilder('r')
-      .innerJoin(
-        'purchase_orders',
-        'po',
-        'po.id = r.purchase_order_id AND po.tenant_id = :tenantId',
-        { tenantId },
-      )
-      .where('r.id = :id', { id: receptionId })
+      .where('r.id = :id AND r.tenant_id = :tenantId', {
+        id: receptionId,
+        tenantId,
+      })
       .getOne();
 
     if (!reception) {

@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import { CreateReceptionDto } from './dto/create-reception.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -17,6 +18,25 @@ import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 @Controller('receptions')
 export class ReceptionsController {
   constructor(private readonly service: ReceptionsService) {}
+
+  @Post()
+  @RequirePermission('receptions', 'C')
+  @ApiOperation({
+    summary: 'Create a reception manually (New Reception button)',
+    description: `Creates one or more reception rows.
+- **With \`purchaseOrderId\`:** auto-fills one pending row per PO line (like W5), carrying the supplier/project/delivery/receiver header.
+- **With \`lines\` and no PO:** creates a pending row per manual line.
+- **With neither:** creates a single header-only reception (supplier/project/date/notes), no article lines.
+Stock is not affected here — goods are added to stock when each line is processed via \`POST /receptions/:id/receive\`.`,
+  })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({
+    status: 422,
+    description: 'PO_HAS_NO_LINES — the linked PO has no lines to receive',
+  })
+  create(@CurrentUser() user: JwtPayload, @Body() dto: CreateReceptionDto) {
+    return this.service.create(user.tenantId, dto);
+  }
 
   @Get()
   @RequirePermission('receptions', 'R')

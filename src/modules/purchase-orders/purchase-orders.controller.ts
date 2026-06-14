@@ -77,7 +77,13 @@ export class PurchaseOrdersController {
   async confirm(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     const { purchaseOrder } = await this.service.confirm(user.tenantId, id);
     const lines = await this.service.getLines(id);
-    const receptions = await this.receptionsService.createFromPo(id, lines);
+    const receptions = await this.receptionsService.createFromPo(
+      id,
+      lines,
+      user.tenantId,
+      purchaseOrder.projectId,
+      purchaseOrder.supplierId,
+    );
     return {
       purchaseOrder,
       receptions,
