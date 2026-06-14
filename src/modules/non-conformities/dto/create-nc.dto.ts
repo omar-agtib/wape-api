@@ -65,6 +65,18 @@ export class CreateNcDto {
   @MaxLength(255)
   location?: string;
 
+  @ApiPropertyOptional({
+    description: 'Personnel UUID responsible for this NC',
+  })
+  @IsOptional()
+  @IsUUID()
+  assignedTo?: string;
+
+  @ApiPropertyOptional({ description: 'How the NC was resolved' })
+  @IsOptional()
+  @IsString()
+  resolution?: string;
+
   @ApiPropertyOptional({ example: '2026-05-01' })
   @IsOptional()
   @IsString()

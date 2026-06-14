@@ -75,6 +75,16 @@ export class NonConformity extends SoftDeleteEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   location?: string;
 
+  @ApiPropertyOptional({
+    description: 'Personnel responsible for resolving this NC',
+  })
+  @Column({ type: 'uuid', name: 'assigned_to', nullable: true })
+  assignedTo?: string;
+
+  @ApiPropertyOptional({ description: 'How the non-conformity was resolved' })
+  @Column({ type: 'text', nullable: true })
+  resolution?: string;
+
   @ApiPropertyOptional({ example: '2026-05-01' })
   @Column({ type: 'date', nullable: true })
   deadline?: string;
