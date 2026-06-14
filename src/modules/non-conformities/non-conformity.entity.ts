@@ -4,6 +4,12 @@ import { SoftDeleteEntity } from '../../common/entities/base.entity';
 import { NcStatus } from '../../common/enums';
 import { DecimalTransformer } from '../../common/transformers/decimal.transformer';
 
+export interface AnnotationPath {
+  tool: string;
+  color: string;
+  points: number[][];
+}
+
 @Entity('non_conformities')
 export class NonConformity extends SoftDeleteEntity {
   @ApiProperty()
@@ -84,6 +90,14 @@ export class NonConformity extends SoftDeleteEntity {
   @ApiPropertyOptional({ description: 'How the non-conformity was resolved' })
   @Column({ type: 'text', nullable: true })
   resolution?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Plan annotations (pen/highlight/pin/warning paths). Points stored as percentages (0–100) of plan dimensions.',
+    type: 'array',
+  })
+  @Column({ type: 'jsonb', nullable: true })
+  annotations?: AnnotationPath[];
 
   @ApiPropertyOptional({ example: '2026-05-01' })
   @Column({ type: 'date', nullable: true })

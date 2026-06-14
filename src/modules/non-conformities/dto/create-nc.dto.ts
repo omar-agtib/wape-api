@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsArray,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -8,7 +9,23 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class AnnotationPathDto {
+  @ApiProperty({ enum: ['pen', 'highlight', 'pin', 'warning'] })
+  @IsString()
+  tool: string;
+
+  @ApiProperty({ example: '#ef4444' })
+  @IsString()
+  color: string;
+
+  @ApiProperty({ description: 'Array of [x%, y%] points', type: 'array' })
+  @IsArray()
+  points: number[][];
+}
 
 export class CreateNcDto {
   @ApiProperty({ example: 'uuid-of-project' })
@@ -81,4 +98,11 @@ export class CreateNcDto {
   @IsOptional()
   @IsString()
   deadline?: string;
+
+  @ApiPropertyOptional({ type: [AnnotationPathDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AnnotationPathDto)
+  annotations?: AnnotationPathDto[];
 }
